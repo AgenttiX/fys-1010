@@ -5,7 +5,7 @@
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# any later version.
 
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -51,24 +51,40 @@ class Measurement:
         self.temp_hot = self.readfile(path, "Temperature2.txt")[0][:, 1]
         self.voltage = self.readfile(path, "Voltage.txt")[0][:, 1]
 
+        # Check where to end the measurement
+        # The peak temperature of the cold side appears to be a good point for it
+        self.temp_cold_max = self.temp_cold.max()
+        self.stop_index = np.where(self.temp_cold == self.temp_cold_max)[0][0]
+
+        # Computed vectors
+        self.temp_diff = self.temp_hot - self.temp_cold
+        self.power = self.current * self.voltage
+
         # Computed values
         self.temp_max = self.temp_hot.max()
         self.temp_min = self.temp_cold.min()
-        self.time = self.time_vec[-1]
+        self.time_total = self.time_vec[self.stop_index]
+        self.dtime = self.time_vec[1]
 
+        # Temperature differences
         self.dtemp_pump_hot = self.temp_max - self.temp_hot[0]
         self.dtemp_pump_cold = self.temp_cold[0] - self.temp_min
-        self.dtemp_engine_hot = self.temp_max - self.temp_hot[-1]
-        self.dtemp_engine_cold = self.temp_cold[-1] - self.temp_min
+        self.dtemp_engine_hot = self.temp_max - self.temp_hot[self.stop_index]
+        self.dtemp_engine_cold = self.temp_cold[self.stop_index] - self.temp_min
 
+        # Transferred heat
         self.qhot_pump = self.heat(self.dtemp_pump_hot)
         self.qcold_pump = self.heat(self.dtemp_pump_cold)
         self.qhot_engine = self.heat(self.dtemp_engine_hot)
         self.qcold_engine = self.heat(self.dtemp_engine_cold)
 
-        # Computed vectors
-        self.temp_diff = self.temp_hot - self.temp_cold
-        self.power = self.current * self.voltage
+        # Gives somewhat different results than the measurement software
+        # self.power_inp_total = np.sum(self.power_inp) * self.dtime
+        # self.power_gen_total = np.sum(self.power_gen) * self.dtime
+
+        # Gives results close to those of the measurement software
+        self.power_inp_total = np.trapz(self.power_inp, dx=self.dtime)
+        self.power_gen_total = np.trapz(self.power_gen, dx=self.dtime)
 
     def readfile(self, path, filename):
         """ Parses a file created by the DataStudio measurement software
@@ -76,7 +92,7 @@ class Measurement:
         :param filename: str of file name
         :return: data (Numpy array), title (str)
         """
-        # The DataStudio software uses ISO-8859-1 encoding (for the degree sign in temperature files)
+        # The DataStudio software uses ISO-8859-1 encoding (especially for the degree sign in temperature files)
         file = open(path + filename, encoding="iso-8859-1")
         rowlist = file.readlines()
 
@@ -97,10 +113,13 @@ class Measurement:
 
     def print(self):
         print("-----", self.name, "-----")
+        print("End index:", self.stop_index)
+        print("Measurement length:", self.time_vec[self.stop_index])
+        print()
         print("Start temperature (hot):", self.temp_hot[0])
         print("Start temperature (cold):", self.temp_cold[0])
-        print("End temperature (hot):", self.temp_hot[-1])
-        print("End temperature (cold)", self.temp_cold[-1])
+        print("End temperature (hot):", self.temp_hot[self.stop_index])
+        print("End temperature (cold)", self.temp_cold[self.stop_index])
         print()
         print("Max temperature", self.temp_max)
         print("Min temperature", self.temp_min)
@@ -112,6 +131,9 @@ class Measurement:
         print("Heat engine")
         print("Q_hot", self.qhot_engine)
         print("Q_cold", self.qcold_engine)
+        print()
+        print("Power input:", self.power_inp_total)
+        print("Power generated:", self.power_gen_total)
         print("-----\n")
 
 
@@ -131,14 +153,12 @@ heat_capacity = 900    # c (kg * degC)
 
 # Initialise measurements
 finnfoam = Measurement("Finnfoam", "Data/Finnfoam/", mass, heat_capacity)
-air = Measurement("Air", "Data/Air/", mass, heat_capacity)
 wood = Measurement("Wood", "Data/Wood/", mass, heat_capacity)
-
+air = Measurement("Air", "Data/Air/", mass, heat_capacity)
 
 finnfoam.print()
-air.print()
 wood.print()
-
+air.print()
 
 # PyQtGraph initialisation
 app = pg.mkQApp()
@@ -162,7 +182,7 @@ plot_temp_cold = plot_rgb("Temperature of cold side", finnfoam.temp_cold, wood.t
 win.nextRow()
 
 plot_power = plot_rgb("Power", finnfoam.power, wood.power, air.power)
-
+plot_temp_diff = plot_rgb("Temperature difference", finnfoam.temp_diff, wood.temp_diff, air.temp_diff)
 
 # Main loop
 app.exec_()
