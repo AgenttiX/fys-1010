@@ -51,7 +51,12 @@ class Measurement:
         self.temp_hot = self.readfile(path, "Temperature2.txt")[0][:, 1]
         self.voltage = self.readfile(path, "Voltage.txt")[0][:, 1]
 
-        # Check where to end the measurement
+        # Check when the power is applied
+        # The peak voltage appears to be a good point for it
+        self.power_inp_max = self.power_inp.max()
+        self.enable_index = np.where(self.power_inp == self.power_inp_max)[0][0]
+
+        # Check when to end the measurement
         # The peak temperature of the cold side appears to be a good point for it
         self.temp_cold_max = self.temp_cold.max()
         self.stop_index = np.where(self.temp_cold == self.temp_cold_max)[0][0]
@@ -61,14 +66,16 @@ class Measurement:
         self.power = self.current * self.voltage
 
         # Computed values
+        self.temp_hot_start = np.mean(self.temp_hot[self.enable_index-11:self.enable_index-1])
+        self.temp_cold_start = np.mean(self.temp_cold[self.enable_index-11:self.enable_index-1])
         self.temp_max = self.temp_hot.max()
         self.temp_min = self.temp_cold.min()
         self.time_total = self.time_vec[self.stop_index]
         self.dtime = self.time_vec[1]
 
         # Temperature differences
-        self.dtemp_pump_hot = self.temp_max - self.temp_hot[0]
-        self.dtemp_pump_cold = self.temp_cold[0] - self.temp_min
+        self.dtemp_pump_hot = self.temp_max - self.temp_hot_start
+        self.dtemp_pump_cold = self.temp_cold_start - self.temp_min
         self.dtemp_engine_hot = self.temp_max - self.temp_hot[self.stop_index]
         self.dtemp_engine_cold = self.temp_cold[self.stop_index] - self.temp_min
 
@@ -83,8 +90,8 @@ class Measurement:
         # self.power_gen_total = np.sum(self.power_gen) * self.dtime
 
         # Gives results close to those of the measurement software
-        self.power_inp_total = np.trapz(self.power_inp, dx=self.dtime)
-        self.power_gen_total = np.trapz(self.power_gen, dx=self.dtime)
+        self.work_inp = np.trapz(self.power_inp, dx=self.dtime)
+        self.work_gen = np.trapz(self.power_gen, dx=self.dtime)
 
     def readfile(self, path, filename):
         """ Parses a file created by the DataStudio measurement software
@@ -113,11 +120,12 @@ class Measurement:
 
     def print(self):
         print("-----", self.name, "-----")
+        print("Enable index", self.enable_index)
         print("End index:", self.stop_index)
-        print("Measurement length:", self.time_vec[self.stop_index])
+        print("Measurement length (from the very beginning to the end index):", self.time_vec[self.stop_index])
         print()
-        print("Start temperature (hot):", self.temp_hot[0])
-        print("Start temperature (cold):", self.temp_cold[0])
+        print("Start temperature (hot):", self.temp_hot_start)
+        print("Start temperature (cold):", self.temp_cold_start)
         print("End temperature (hot):", self.temp_hot[self.stop_index])
         print("End temperature (cold)", self.temp_cold[self.stop_index])
         print()
@@ -125,15 +133,27 @@ class Measurement:
         print("Min temperature", self.temp_min)
         print()
         print("Heat pump")
+        print("Energy input:", self.work_inp)
         print("Q_hot", self.qhot_pump)
         print("Q_cold", self.qcold_pump)
+        print("Q_cold + W", self.qcold_pump + self.work_inp)
+        print("E_lost", self.qcold_pump + self.work_inp - self.qhot_pump)
+        print("Heat transfer coefficient / coefficient of performance / lämpökerroin", self.qcold_pump / self.work_inp)
         print()
         print("Heat engine")
+        print("Energy generated:", self.work_gen)
         print("Q_hot", self.qhot_engine)
         print("Q_cold", self.qcold_engine)
+        print("Q_hot - Q_cold", self.qhot_engine - self.qcold_engine)
+        print("\"Heat transfer efficiency\" (%)", self.work_gen / (self.qhot_engine - self.qcold_engine) * 100)
+        print("Efficiency e", self.work_gen / self.qhot_engine)
+        print("Ideal efficiency", 1 - (self.qcold_engine / self.qhot_engine))
         print()
-        print("Power input:", self.power_inp_total)
-        print("Power generated:", self.power_gen_total)
+        # About the efficiency of peltier elements (#telok@IRCnet, 2016-07-27)
+        # 19:10 < AgenttiX> Oletteko kokeilleet TECin ohjaamista Arduinolla? Toimisiko tämä kytkentä? http://garagelab.com/profiles/blogs/how-to-use-a-peltier-with-arduino
+        # --
+        # 20:21 <@hrst> Ei toimi. Peltieriä ei voi ohjata PWM:llä.
+        # 20:22 <@hrst> Hyötysuhde on PWM:llä paska, mikä on ongelma koska se on muutenkin liian paska, ja sen lisäksi se hajoaa mekaaniseen värähtelyyn ennemmin tai myöhemmin.
         print("-----\n")
 
 
@@ -183,6 +203,7 @@ win.nextRow()
 
 plot_power = plot_rgb("Power", finnfoam.power, wood.power, air.power)
 plot_temp_diff = plot_rgb("Temperature difference", finnfoam.temp_diff, wood.temp_diff, air.temp_diff)
+
 
 # Main loop
 app.exec_()
