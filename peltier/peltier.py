@@ -24,7 +24,7 @@ import pyqtgraph as pg
 
 
 class Measurement:
-    def __init__(self, name, path, mass, heat_capacity):
+    def __init__(self, name, path, mass, heat_capacity, aluminium_area, insulator_thickness = 0, thermal_conductivity = 0):
         """
         This class holds the data of a single measurement
         :param path: path of measurement files
@@ -33,6 +33,11 @@ class Measurement:
         self.name = name
         self.mass = mass
         self.heat_capacity = heat_capacity
+
+        self.aluminium_area = aluminium_area    #0.033 *0.032  # m^2
+        self.insulator_thickness = insulator_thickness
+        self.thermal_conductivity = thermal_conductivity
+        self.not_air = (self.insulator_thickness != 0)
 
         # Load data from files
         currentdata = self.readfile(path, "Current.txt")[0]
@@ -70,8 +75,13 @@ class Measurement:
         self.temp_cold_start = np.mean(self.temp_cold[self.enable_index-11:self.enable_index-1])
         self.temp_max = self.temp_hot.max()
         self.temp_min = self.temp_cold.min()
+        self.peak_index = np.where(self.temp_hot == self.temp_max)[0][0]
+
+        # Times
         self.time_total = self.time_vec[self.stop_index]
         self.dtime = self.time_vec[1]
+        self.time_pump = self.time_vec[self.peak_index] - self.time_vec[self.enable_index]
+        self.time_gen = self.time_vec[self.stop_index] - self.time_vec[self.peak_index]
 
         # Temperature differences
         self.dtemp_pump_hot = self.temp_max - self.temp_hot_start
@@ -92,6 +102,22 @@ class Measurement:
         # Gives results close to those of the measurement software
         self.work_inp = np.trapz(self.power_inp, dx=self.dtime)
         self.work_gen = np.trapz(self.power_gen, dx=self.dtime)
+
+        if (self.not_air):  # no air-insulator
+            # Heat transfer speed through insulator,    assuming that outside surface is at room temperature,    calculated with equation 12 ((Q/t) = k * A *(dT)/x)
+            self.heat_transfer_speed_hot  = thermal_conductivity * aluminium_area * (self.temp_hot - self.temp_hot_start)/self.insulator_thickness
+            self.heat_transfer_speed_cold = thermal_conductivity * aluminium_area * (self.temp_cold_start - self.temp_cold)/self.insulator_thickness
+
+            # Total leaked heat due to heat transfer                sum( (Q/t) *dt )
+            self.heat_loss_pump_hot  = np.trapz(self.heat_transfer_speed_hot[self.enable_index : self.peak_index], dx=self.dtime)
+            self.heat_loss_pump_cold = np.trapz(self.heat_transfer_speed_cold[self.enable_index : self.peak_index], dx=self.dtime)
+            self.heat_loss_gen_hot   = np.trapz(self.heat_transfer_speed_hot[self.peak_index : self.stop_index], dx=self.dtime)
+            self.heat_loss_gen_cold  = np.trapz(self.heat_transfer_speed_cold[self.peak_index : self.stop_index], dx=self.dtime)    # it is negative because more heat flows out
+
+            # Esitmated Q_hot with regular resistance heater.       Assumed linear heat heat rise.
+            # Quick summary of what has been done:   --   W_tot = Q_hot + Q_leak    --    Q_leak = 1/2 * k*A*dT_max/(x) * t    --   dT_max = Q_hot/(mc)
+            self.Q_hot_resistor = self.work_inp / (1 + self.thermal_conductivity*self.aluminium_area*self.time_pump / ( 2*self.mass*self.heat_capacity*self.insulator_thickness ))
+
 
     def readfile(self, path, filename):
         """ Parses a file created by the DataStudio measurement software
@@ -138,7 +164,16 @@ class Measurement:
         print("Q_cold", self.qcold_pump)
         print("Q_cold + W", self.qcold_pump + self.work_inp)
         print("E_lost", self.qcold_pump + self.work_inp - self.qhot_pump)
-        print("Heat transfer coefficient / coefficient of performance / lämpökerroin", self.qcold_pump / self.work_inp)
+        print("Heat transfer coefficient / coefficient of performance / lämpökerroin hot", self.qhot_pump / self.work_inp)
+        print("Heat transfer coefficient / coefficient of performance / lämpökerroin cold", self.qcold_pump / self.work_inp)
+        if (self.not_air):
+            print("Heat transfer through insulator, hot side", self.heat_loss_pump_hot)
+            print("Heat transfer through insulator, cold side", self.heat_loss_pump_cold)
+            print("Estimated Q_hot with resistor", self.Q_hot_resistor)
+        #
+        # I think it should be defined for Q_hot too. Yep, TODO that
+        # Also calculate heatloss due to conduction TODO remove these comments when ready
+        # Todo implement resistive heater calculations
         print()
         print("Heat engine")
         print("Energy generated:", self.work_gen)
@@ -148,6 +183,9 @@ class Measurement:
         print("\"Heat transfer efficiency\" (%)", self.work_gen / (self.qhot_engine - self.qcold_engine) * 100)
         print("Efficiency e", self.work_gen / self.qhot_engine)
         print("Ideal efficiency", 1 - (self.qcold_engine / self.qhot_engine))
+        if (self.not_air):
+            print("Heat transfer through insulator, hot side", self.heat_loss_gen_hot)
+            print("Heat transfer through insulator, cold side", self.heat_loss_gen_cold)
         print()
         # About the efficiency of peltier elements (#telok@IRCnet, 2016-07-27)
         # 19:10 < AgenttiX> Oletteko kokeilleet TECin ohjaamista Arduinolla? Toimisiko tämä kytkentä? http://garagelab.com/profiles/blogs/how-to-use-a-peltier-with-arduino
@@ -170,11 +208,17 @@ def plot_rgb(title, first, second, third):
 # Constants
 mass = 0.019            # m (kg)
 heat_capacity = 900    # c (kg * degC)
+aluminium_area = 0.033 *0.032  # x*y (m^2)
+thickness_finnfoam = 0.00942  # x (m)
+thickness_wood = 0.0088       # x (m)
+thermal_conductivity_finnfoam = 0.033 # k (W/(m*K))         (http://www.finnfoam.fi)
+thermal_conductivity_wood = 0.16      # k (W/(m*K))   (oak) (http://www.engineeringtoolbox.com/)
+
 
 # Initialise measurements
-finnfoam = Measurement("Finnfoam", "Data/Finnfoam/", mass, heat_capacity)
-wood = Measurement("Wood", "Data/Wood/", mass, heat_capacity)
-air = Measurement("Air", "Data/Air/", mass, heat_capacity)
+finnfoam = Measurement("Finnfoam", "Data/Finnfoam/", mass, heat_capacity, aluminium_area, thickness_finnfoam, thermal_conductivity_finnfoam)
+wood = Measurement("Wood", "Data/Wood/", mass, heat_capacity, aluminium_area, thickness_wood, thermal_conductivity_wood)
+air = Measurement("Air", "Data/Air/", mass, heat_capacity, aluminium_area)
 
 finnfoam.print()
 wood.print()
