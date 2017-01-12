@@ -34,7 +34,7 @@ class Measurement:
         self.mass = mass
         self.heat_capacity = heat_capacity
 
-        self.aluminium_area = aluminium_area    #0.033 *0.032  # m^2
+        self.aluminium_area = aluminium_area
         self.insulator_thickness = insulator_thickness
         self.thermal_conductivity = thermal_conductivity
         self.not_air = (self.insulator_thickness != 0)
@@ -60,6 +60,19 @@ class Measurement:
         # The peak voltage appears to be a good point for it
         self.power_inp_max = self.power_inp.max()
         self.enable_index = np.where(self.power_inp == self.power_inp_max)[0][0]
+        self.disable_index = np.argmin(np.ediff1d(self.power_inp))+1  # gets minium of consecutive elements
+
+        # Computed values
+        self.temp_hot_start = np.mean(self.temp_hot[self.enable_index - 11:self.enable_index - 1])
+        self.temp_cold_start = np.mean(self.temp_cold[self.enable_index - 11:self.enable_index - 1])
+        self.temp_hot += (self.temp_cold_start - self.temp_hot_start)/2     #normalize temperatures to same level
+        self.temp_cold += (self.temp_hot_start - self.temp_cold_start)/2
+
+
+        self.temp_max = self.temp_hot.max()
+        self.temp_min = self.temp_cold.min()
+        self.temp_peak_index = np.where(self.temp_hot == self.temp_max)[0][
+            0]  # is not exactly same as self.disable_index
 
         # Check when to end the measurement
         # The peak temperature of the cold side appears to be a good point for it
@@ -70,18 +83,13 @@ class Measurement:
         self.temp_diff = self.temp_hot - self.temp_cold
         self.power = self.current * self.voltage
 
-        # Computed values
-        self.temp_hot_start = np.mean(self.temp_hot[self.enable_index-11:self.enable_index-1])
-        self.temp_cold_start = np.mean(self.temp_cold[self.enable_index-11:self.enable_index-1])
-        self.temp_max = self.temp_hot.max()
-        self.temp_min = self.temp_cold.min()
-        self.peak_index = np.where(self.temp_hot == self.temp_max)[0][0]
+
 
         # Times
         self.time_total = self.time_vec[self.stop_index]
         self.dtime = self.time_vec[1]
-        self.time_pump = self.time_vec[self.peak_index] - self.time_vec[self.enable_index]
-        self.time_gen = self.time_vec[self.stop_index] - self.time_vec[self.peak_index]
+        self.time_pump = self.time_vec[self.temp_peak_index] - self.time_vec[self.enable_index]
+        self.time_gen = self.time_vec[self.stop_index] - self.time_vec[self.temp_peak_index]
 
         # Temperature differences
         self.dtemp_pump_hot = self.temp_max - self.temp_hot_start
@@ -109,10 +117,10 @@ class Measurement:
             self.heat_transfer_speed_cold = thermal_conductivity * aluminium_area * (self.temp_cold_start - self.temp_cold)/self.insulator_thickness
 
             # Total leaked heat due to heat transfer                sum( (Q/t) *dt )
-            self.heat_loss_pump_hot  = np.trapz(self.heat_transfer_speed_hot[self.enable_index : self.peak_index], dx=self.dtime)
-            self.heat_loss_pump_cold = np.trapz(self.heat_transfer_speed_cold[self.enable_index : self.peak_index], dx=self.dtime)
-            self.heat_loss_gen_hot   = np.trapz(self.heat_transfer_speed_hot[self.peak_index : self.stop_index], dx=self.dtime)
-            self.heat_loss_gen_cold  = np.trapz(self.heat_transfer_speed_cold[self.peak_index : self.stop_index], dx=self.dtime)    # it is negative because more heat flows out
+            self.heat_loss_pump_hot  = np.trapz(self.heat_transfer_speed_hot[self.enable_index : self.temp_peak_index], dx=self.dtime)
+            self.heat_loss_pump_cold = np.trapz(self.heat_transfer_speed_cold[self.enable_index : self.temp_peak_index], dx=self.dtime)
+            self.heat_loss_gen_hot   = np.trapz(self.heat_transfer_speed_hot[self.temp_peak_index : self.stop_index], dx=self.dtime)
+            self.heat_loss_gen_cold  = np.trapz(self.heat_transfer_speed_cold[self.temp_peak_index : self.stop_index], dx=self.dtime)    # it is negative because more heat flows out
 
             # Esitmated Q_hot with regular resistance heater.       Assumed linear heat heat rise.
             # Quick summary of what has been done:   --   W_tot = Q_hot + Q_leak    --    Q_leak = 1/2 * k*A*dT_max/(x) * t    --   dT_max = Q_hot/(mc)
@@ -195,12 +203,32 @@ class Measurement:
         print("-----\n")
 
 
-def plot_rgb(title, first, second, third):
+def plot_bgr(title, first, second, third, ylabel="", yunit="", offset=0, name_first="Finnfoam", name_second="Puu", name_third="Ilma"):
+    # for reference octave uses order [blue, green, red] for coloring, we use that order to get finnfoam to be blue
+    plot = win.addPlot(title=title)
+    plot.addLegend()
+    plot.plot(np.arange(offset, first.size+offset)/10, first, pen=blue, name=name_first)
+    plot.plot(np.arange(offset, second.size+offset)/10, second, pen=green, name=name_second)
+    plot.plot(np.arange(offset, third.size+offset)/10, third, pen=red, name=name_third)
+    plot.setLabel("left", ylabel, yunit)
+    plot.setLabel("bottom", "t (s)")
+    plot.setRange(xRange=[0, 400])
+
+    return plot
+
+
+def plot_two(title, first, second, ylabel="", yunit="", name_first="", name_second="", offset=0):
+
+    light_blue = pg.mkPen((80, 80, 255), width=1.5)
+    dark_blue = pg.mkPen((0, 0, 160), width=1.5)
 
     plot = win.addPlot(title=title)
-    plot.plot(first, pen=red)
-    plot.plot(second, pen=green)
-    plot.plot(third, pen=blue)
+    plot.addLegend()
+    plot.plot(np.arange(offset, first.size+offset)/10, first, pen=light_blue, name=name_first)
+    plot.plot(np.arange(offset, second.size+offset)/10, second, pen=dark_blue, name=name_second)
+    plot.setLabel("left", ylabel, yunit)
+    plot.setLabel("bottom", "t (s)")
+    plot.setRange(xRange=[0, 400])
 
     return plot
 
@@ -235,19 +263,20 @@ blue = pg.mkPen((0, 0, 255), width=1.5)
 win = pg.GraphicsWindow(title="Peltier (Lämpövoimakoneet)")
 
 
-plot_power_inp = plot_rgb("Power input", finnfoam.power_inp, wood.power_inp, air.power_inp)
-plot_power_gen = plot_rgb("Power generated", finnfoam.power_gen, wood.power_gen, air.power_gen)
+plot_power_inp = plot_bgr("", finnfoam.power_inp, wood.power_inp, air.power_inp, "P", "w")  # Power input
+plot_power_gen = plot_bgr("", finnfoam.power_gen, wood.power_gen, air.power_gen,  "P", "w", offset=finnfoam.disable_index)  # Power generated
 
 win.nextRow()
 
-plot_temp_hot = plot_rgb("Temperature of hot side", finnfoam.temp_hot, wood.temp_hot, air.temp_hot)
-plot_temp_cold = plot_rgb("Temperature of cold side", finnfoam.temp_cold, wood.temp_cold, air.temp_cold)
+plot_temp_hot = plot_bgr("", finnfoam.temp_hot, wood.temp_hot, air.temp_hot, "T", "°C") # Temperature of hot side
+plot_temp_cold = plot_bgr("", finnfoam.temp_cold, wood.temp_cold, air.temp_cold, "T", "°C") # Temperature of cold side
 
 win.nextRow()
 
-plot_power = plot_rgb("Power", finnfoam.power, wood.power, air.power)
-plot_temp_diff = plot_rgb("Temperature difference", finnfoam.temp_diff, wood.temp_diff, air.temp_diff)
+#plot_power = plot_rgb("Power", finnfoam.power, wood.power, air.power, "P", "w")
+plot_finnfoam_both = plot_two("", finnfoam.temp_hot, finnfoam.temp_cold, "T", "°C", "Lämmin puoli", "Kylmä puoli" ) # Temperature difference of both sides
+plot_temp_diff = plot_bgr("", finnfoam.temp_diff, wood.temp_diff, air.temp_diff, "ΔT", "°C") #Temperature difference
 
-
+win.resize(1000,1000)
 # Main loop
 app.exec_()
