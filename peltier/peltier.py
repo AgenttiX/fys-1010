@@ -206,7 +206,7 @@ class Measurement:
 def plot_bgr(title, first, second, third, ylabel="", yunit="", offset=0, name_first="Finnfoam", name_second="Puu", name_third="Ilma"):
     # for reference octave uses order [blue, green, red] for coloring, we use that order to get finnfoam to be blue
     plot = win.addPlot(title=title)
-    plot.addLegend()
+    plot.addLegend(offset=(-1,1))
     plot.plot(np.arange(offset, first.size+offset)/10, first, pen=blue, name=name_first)
     plot.plot(np.arange(offset, second.size+offset)/10, second, pen=green, name=name_second)
     plot.plot(np.arange(offset, third.size+offset)/10, third, pen=red, name=name_third)
@@ -223,7 +223,7 @@ def plot_two(title, first, second, ylabel="", yunit="", name_first="", name_seco
     dark_blue = pg.mkPen((0, 0, 160), width=1.5)
 
     plot = win.addPlot(title=title)
-    plot.addLegend()
+    plot.addLegend(offset=(-1,1))
     plot.plot(np.arange(offset, first.size+offset)/10, first, pen=light_blue, name=name_first)
     plot.plot(np.arange(offset, second.size+offset)/10, second, pen=dark_blue, name=name_second)
     plot.setLabel("left", ylabel, yunit)
