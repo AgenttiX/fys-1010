@@ -60,11 +60,12 @@ class Measurement:
         # The peak voltage appears to be a good point for it
         self.power_inp_max = self.power_inp.max()
         self.enable_index = np.where(self.power_inp == self.power_inp_max)[0][0]
-        self.disable_index = np.argmin(np.ediff1d(self.power_inp))+1  # gets minium of consecutive elements
+        self.disable_index = np.argmin(np.ediff1d(self.power_inp))+1  # gets minium of consecutive elements of power vector
 
         # Computed values
         self.temp_hot_start = np.mean(self.temp_hot[self.enable_index - 11:self.enable_index - 1])
         self.temp_cold_start = np.mean(self.temp_cold[self.enable_index - 11:self.enable_index - 1])
+        self.temp_start = (self.temp_hot_start + self.temp_cold_start)/2
         self.temp_hot += (self.temp_cold_start - self.temp_hot_start)/2     #normalize temperatures to same level
         self.temp_cold += (self.temp_hot_start - self.temp_cold_start)/2
 
@@ -92,8 +93,8 @@ class Measurement:
         self.time_gen = self.time_vec[self.stop_index] - self.time_vec[self.temp_peak_index]
 
         # Temperature differences
-        self.dtemp_pump_hot = self.temp_max - self.temp_hot_start
-        self.dtemp_pump_cold = self.temp_cold_start - self.temp_min
+        self.dtemp_pump_hot = self.temp_max - self.temp_start
+        self.dtemp_pump_cold = self.temp_start - self.temp_min
         self.dtemp_engine_hot = self.temp_max - self.temp_hot[self.stop_index]
         self.dtemp_engine_cold = self.temp_cold[self.stop_index] - self.temp_min
 
@@ -111,10 +112,10 @@ class Measurement:
         self.work_inp = np.trapz(self.power_inp, dx=self.dtime)
         self.work_gen = np.trapz(self.power_gen, dx=self.dtime)
 
-        if (self.not_air):  # no air-insulator
+        if (self.not_air):  # not an air-insulator
             # Heat transfer speed through insulator,    assuming that outside surface is at room temperature,    calculated with equation 12 ((Q/t) = k * A *(dT)/x)
-            self.heat_transfer_speed_hot  = thermal_conductivity * aluminium_area * (self.temp_hot - self.temp_hot_start)/self.insulator_thickness
-            self.heat_transfer_speed_cold = thermal_conductivity * aluminium_area * (self.temp_cold_start - self.temp_cold)/self.insulator_thickness
+            self.heat_transfer_speed_hot  = thermal_conductivity * aluminium_area * (self.temp_hot - self.temp_start)/self.insulator_thickness
+            self.heat_transfer_speed_cold = thermal_conductivity * aluminium_area * (self.temp_start - self.temp_cold)/self.insulator_thickness
 
             # Total leaked heat due to heat transfer                sum( (Q/t) *dt )
             self.heat_loss_pump_hot  = np.trapz(self.heat_transfer_speed_hot[self.enable_index : self.temp_peak_index], dx=self.dtime)
@@ -160,6 +161,7 @@ class Measurement:
         print()
         print("Start temperature (hot):", self.temp_hot_start)
         print("Start temperature (cold):", self.temp_cold_start)
+        print("Start temperature (mean):", self.temp_start)
         print("End temperature (hot):", self.temp_hot[self.stop_index])
         print("End temperature (cold)", self.temp_cold[self.stop_index])
         print()
@@ -276,6 +278,7 @@ win.nextRow()
 #plot_power = plot_rgb("Power", finnfoam.power, wood.power, air.power, "P", "w")
 plot_finnfoam_both = plot_two("", finnfoam.temp_hot, finnfoam.temp_cold, "T", "°C", "Lämmin puoli", "Kylmä puoli" ) # Temperature difference of both sides
 plot_temp_diff = plot_bgr("", finnfoam.temp_diff, wood.temp_diff, air.temp_diff, "ΔT", "°C") #Temperature difference
+
 
 win.resize(1000,1000)
 # Main loop
