@@ -112,21 +112,21 @@ class Measurement:
         self.work_inp = np.trapz(self.power_inp, dx=self.dtime)
         self.work_gen = np.trapz(self.power_gen, dx=self.dtime)
 
-        if (self.not_air):  # not an air-insulator
-            # Heat transfer speed through insulator,    assuming that outside surface is at room temperature,    calculated with equation 12 ((Q/t) = k * A *(dT)/x)
+        if (self.not_air):  # we are not considering case:air in which there is no insulation
+            # Heat transfer speed through insulator, assuming that outside surface is at room temperature
             self.heat_transfer_speed_hot  = thermal_conductivity * aluminium_area * (self.temp_hot - self.temp_start)/self.insulator_thickness
             self.heat_transfer_speed_cold = thermal_conductivity * aluminium_area * (self.temp_start - self.temp_cold)/self.insulator_thickness
 
-            # Total leaked heat due to heat transfer                sum( (Q/t) *dt )
+            # Total leaked heat due to heat transfer
             self.heat_loss_pump_hot  = np.trapz(self.heat_transfer_speed_hot[self.enable_index : self.temp_peak_index], dx=self.dtime)
             self.heat_loss_pump_cold = np.trapz(self.heat_transfer_speed_cold[self.enable_index : self.temp_peak_index], dx=self.dtime)
             self.heat_loss_gen_hot   = np.trapz(self.heat_transfer_speed_hot[self.temp_peak_index : self.stop_index], dx=self.dtime)
             self.heat_loss_gen_cold  = np.trapz(self.heat_transfer_speed_cold[self.temp_peak_index : self.stop_index], dx=self.dtime)    # it is negative because more heat flows out
 
-            # Esitmated Q_hot with regular resistance heater.       Assumed linear heat heat rise.
-            # Quick summary of what has been done:   --   W_tot = Q_hot + Q_leak    --    Q_leak = 1/2 * k*A*dT_max/(x) * t    --   dT_max = Q_hot/(mc)
+            # Esitmated Q_hot with regular resistance heater. Assumed linear heat heat rise.
             self.Q_hot_resistor = self.work_inp / (1 + self.thermal_conductivity*self.aluminium_area*self.time_pump / ( 2*self.mass*self.heat_capacity*self.insulator_thickness ))
-
+        else:   # Case: air and no insulation
+            self.Q_hot_resistor = self.work_inp
 
     def readfile(self, path, filename):
         """ Parses a file created by the DataStudio measurement software
@@ -180,6 +180,8 @@ class Measurement:
             print("Heat transfer through insulator, hot side", self.heat_loss_pump_hot)
             print("Heat transfer through insulator, cold side", self.heat_loss_pump_cold)
             print("Estimated Q_hot with resistor", self.Q_hot_resistor)
+        else:
+            print("Estimated Q_hot with resistor (=energy input)", self.Q_hot_resistor)
         #
         # I think it should be defined for Q_hot too. Yep, TODO that
         # Also calculate heatloss due to conduction TODO remove these comments when ready
