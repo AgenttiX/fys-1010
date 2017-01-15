@@ -174,8 +174,13 @@ class Measurement:
         print("Q_cold", self.qcold_pump)
         print("Q_cold + W", self.qcold_pump + self.work_inp)
         print("E_lost", self.qcold_pump + self.work_inp - self.qhot_pump)
-        print("Heat transfer coefficient / coefficient of performance / lämpökerroin hot", self.qhot_pump / self.work_inp)
-        print("Heat transfer coefficient / coefficient of performance / lämpökerroin cold", self.qcold_pump / self.work_inp)
+        print("Coefficient of performance COP_hot", self.qhot_pump / self.work_inp)
+        print("Coefficient of performance COP_cold", self.qcold_pump / self.work_inp)
+        print("Ideal COP_hot with the setup", self.qhot_pump/(self.qhot_pump-self.qcold_pump))
+        print("Ideal COP_cold with the setup", self.qcold_pump / (self.qhot_pump - self.qcold_pump))
+        print("Ideal Carnot COP_hot", (self.temp_max+273.15)/(self.temp_max-self.temp_min))
+        print("Ideal Carnot COP_cold", (self.temp_min+273.15)/(self.temp_max-self.temp_min))
+
         if (self.not_air):
             print("Heat transfer through insulator, hot side", self.heat_loss_pump_hot)
             print("Heat transfer through insulator, cold side", self.heat_loss_pump_cold)
@@ -194,7 +199,8 @@ class Measurement:
         print("Q_hot - Q_cold", self.qhot_engine - self.qcold_engine)
         print("\"Heat transfer efficiency\" (%)", self.work_gen / (self.qhot_engine - self.qcold_engine) * 100)
         print("Efficiency e", self.work_gen / self.qhot_engine)
-        print("Ideal efficiency", 1 - (self.qcold_engine / self.qhot_engine))
+        print("Ideal efficiency with the setup", 1 - (self.qcold_engine / self.qhot_engine))
+        print("Ideal Carnot efficiency", (self.temp_max-self.temp_min)/(self.temp_max+273.15))
         if (self.not_air):
             print("Heat transfer through insulator, hot side", self.heat_loss_gen_hot)
             print("Heat transfer through insulator, cold side", self.heat_loss_gen_cold)
