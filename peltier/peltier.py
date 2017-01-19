@@ -27,7 +27,13 @@ class Measurement:
     def __init__(self, name, path, mass, heat_capacity, aluminium_area, insulator_thickness=0.0, thermal_conductivity=0.0):
         """
         This class holds the data of a single measurement
-        :param path: path of measurement files
+        :param name: Name of the measurement (str)
+        :param path: Path of measurement files (str), should end with a "/"
+        :param mass: mass (kg)
+        :param heat_capacity (kg * degC)
+        :param aluminium_area (m^2)
+        :param insulator_thickness (m)
+        :param thermal_conductivity of the insulator (W/(m*K)
         """
 
         self.name = name
@@ -153,9 +159,18 @@ class Measurement:
         return data, title, labels
 
     def heat(self, delta_temp):
+        """
+        Q = cm \Delta T
+        :param delta_temp: Temperature difference (K)
+        :return:
+        """
         return self.heat_capacity * self.mass * delta_temp
 
     def print(self):
+        """
+        Prints computation results to the console
+        :return: -
+        """
         print("-----", self.name, "-----")
         print("Enable index", self.enable_index)
         print("End index:", self.stop_index)
@@ -249,8 +264,8 @@ class Main:
         self.win = pg.GraphicsWindow(title="Peltier (Lämpövoimakoneet)")
 
 
-        plot_power_inp = self.plot_bgr("", finnfoam.power_inp, wood.power_inp, air.power_inp, "P", "w")  # Power input
-        plot_power_gen = self.plot_bgr("", finnfoam.power_gen, wood.power_gen, air.power_gen,  "P", "w")  # Power generated
+        plot_power_inp = self.plot_bgr("", finnfoam.power_inp, wood.power_inp, air.power_inp, "P", "W")  # Power input
+        plot_power_gen = self.plot_bgr("", finnfoam.power_gen, wood.power_gen, air.power_gen,  "P", "W")  # Power generated
 
         self.win.nextRow()
 
@@ -279,6 +294,7 @@ class Main:
         plot.setLabel("left", ylabel, yunit)
         plot.setLabel("bottom", "t (s)")
         plot.setRange(xRange=[0, 400])
+        plot.showGrid(x=True, y=True)
 
         return plot
 
@@ -293,6 +309,7 @@ class Main:
         plot.setLabel("left", ylabel, yunit)
         plot.setLabel("bottom", "t (s)")
         plot.setRange(xRange=[0, 400])
+        plot.showGrid(x=True, y=True)
 
         return plot
 
