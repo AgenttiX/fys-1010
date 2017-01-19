@@ -217,81 +217,87 @@ class Measurement:
         print("-----\n")
 
 
-def plot_bgr(title, first, second, third, ylabel="", yunit="", offset=0, name_first="Finnfoam", name_second="Puu", name_third="Ilma"):
-    # for reference octave uses order [blue, green, red] for coloring, we use that order to get finnfoam to be blue
-    plot = win.addPlot(title=title)
-    plot.addLegend(offset=(-1, 1))
-    plot.plot(np.arange(offset, first.size+offset)/10, first, pen=blue, name=name_first)
-    plot.plot(np.arange(offset, second.size+offset)/10, second, pen=green, name=name_second)
-    plot.plot(np.arange(offset, third.size+offset)/10, third, pen=red, name=name_third)
-    plot.setLabel("left", ylabel, yunit)
-    plot.setLabel("bottom", "t (s)")
-    plot.setRange(xRange=[0, 400])
-
-    return plot
+class Main:
+    def __init__(self):
+        # Constants
+        mass = 0.019                            # m (kg)
+        heat_capacity = 900                     # c (kg * degC)
+        aluminium_area = 0.033 * 0.032           # x*y (m^2)
+        thickness_finnfoam = 0.00942            # x (m)
+        thickness_wood = 0.0088                 # x (m)
+        thermal_conductivity_finnfoam = 0.04   # k (W/(m*K)
+        thermal_conductivity_wood = 0.16        # k (W/(m*K))   (oak) (http://www.engineeringtoolbox.com/)
 
 
-def plot_two(title, first, second, ylabel="", yunit="", name_first="", name_second="", offset=0):
+        # Initialise measurements
+        finnfoam = Measurement("Finnfoam", "Data/Finnfoam/", mass, heat_capacity, aluminium_area, thickness_finnfoam, thermal_conductivity_finnfoam)
+        wood = Measurement("Wood", "Data/Wood/", mass, heat_capacity, aluminium_area, thickness_wood, thermal_conductivity_wood)
+        air = Measurement("Air", "Data/Air/", mass, heat_capacity, aluminium_area)
 
-    light_blue = pg.mkPen((80, 80, 255), width=1.5)
-    dark_blue = pg.mkPen((0, 0, 160), width=1.5)
+        finnfoam.print()
+        wood.print()
+        air.print()
 
-    plot = win.addPlot(title=title)
-    plot.addLegend(offset=(-1, 1))
-    plot.plot(np.arange(offset, first.size+offset)/10, first, pen=light_blue, name=name_first)
-    plot.plot(np.arange(offset, second.size+offset)/10, second, pen=dark_blue, name=name_second)
-    plot.setLabel("left", ylabel, yunit)
-    plot.setLabel("bottom", "t (s)")
-    plot.setRange(xRange=[0, 400])
+        # PyQtGraph initialisation
+        app = pg.mkQApp()
+        pg.setConfigOptions(antialias=True, background="w", foreground="k")
 
-    return plot
+        self.red = pg.mkPen((255, 0, 0), width=1.5)
+        self.green = pg.mkPen((0, 255, 0), width=1.5)
+        self.blue = pg.mkPen((0, 0, 255), width=1.5)
 
-
-# Constants
-mass = 0.019                            # m (kg)
-heat_capacity = 900                     # c (kg * degC)
-aluminium_area = 0.033 * 0.032           # x*y (m^2)
-thickness_finnfoam = 0.00942            # x (m)
-thickness_wood = 0.0088                 # x (m)
-thermal_conductivity_finnfoam = 0.04   # k (W/(m*K)
-thermal_conductivity_wood = 0.16        # k (W/(m*K))   (oak) (http://www.engineeringtoolbox.com/)
+        self.win = pg.GraphicsWindow(title="Peltier (Lämpövoimakoneet)")
 
 
-# Initialise measurements
-finnfoam = Measurement("Finnfoam", "Data/Finnfoam/", mass, heat_capacity, aluminium_area, thickness_finnfoam, thermal_conductivity_finnfoam)
-wood = Measurement("Wood", "Data/Wood/", mass, heat_capacity, aluminium_area, thickness_wood, thermal_conductivity_wood)
-air = Measurement("Air", "Data/Air/", mass, heat_capacity, aluminium_area)
+        plot_power_inp = self.plot_bgr("", finnfoam.power_inp, wood.power_inp, air.power_inp, "P", "w")  # Power input
+        plot_power_gen = self.plot_bgr("", finnfoam.power_gen, wood.power_gen, air.power_gen,  "P", "w")  # Power generated
 
-finnfoam.print()
-wood.print()
-air.print()
+        self.win.nextRow()
 
-# PyQtGraph initialisation
-app = pg.mkQApp()
-pg.setConfigOptions(antialias=True, background="w", foreground="k")
+        plot_temp_hot = self.plot_bgr("", finnfoam.temp_hot, wood.temp_hot, air.temp_hot, "T", "°C") # Temperature of hot side
+        plot_temp_cold = self.plot_bgr("", finnfoam.temp_cold, wood.temp_cold, air.temp_cold, "T", "°C") # Temperature of cold side
 
-red = pg.mkPen((255, 0, 0), width=1.5)
-green = pg.mkPen((0, 255, 0), width=1.5)
-blue = pg.mkPen((0, 0, 255), width=1.5)
+        self.win.nextRow()
 
-win = pg.GraphicsWindow(title="Peltier (Lämpövoimakoneet)")
+        #plot_power = plot_rgb("Power", finnfoam.power, wood.power, air.power, "P", "w")
+        plot_finnfoam_both = self.plot_two("", finnfoam.temp_hot, finnfoam.temp_cold, "T", "°C", "Lämmin puoli", "Kylmä puoli" )  # Temperature difference of both sides
+        plot_temp_diff = self.plot_bgr("", finnfoam.temp_diff, wood.temp_diff, air.temp_diff, "ΔT", "°C")  #Temperature difference
+
+        self.win.resize(1000, 1000)
+
+        # Main loop
+        app.exec_()
+
+    def plot_bgr(self, title, first, second, third, ylabel="", yunit="", offset=0, name_first="Finnfoam", name_second="Puu",
+                 name_third="Ilma"):
+        # for reference octave uses order [blue, green, red] for coloring, we use that order to get finnfoam to be blue
+        plot = self.win.addPlot(title=title)
+        plot.addLegend(offset=(-1, 1))
+        plot.plot(np.arange(offset, first.size + offset) / 10, first, pen=self.blue, name=name_first)
+        plot.plot(np.arange(offset, second.size + offset) / 10, second, pen=self.green, name=name_second)
+        plot.plot(np.arange(offset, third.size + offset) / 10, third, pen=self.red, name=name_third)
+        plot.setLabel("left", ylabel, yunit)
+        plot.setLabel("bottom", "t (s)")
+        plot.setRange(xRange=[0, 400])
+
+        return plot
+
+    def plot_two(self, title, first, second, ylabel="", yunit="", name_first="", name_second="", offset=0):
+        light_blue = pg.mkPen((80, 80, 255), width=1.5)
+        dark_blue = pg.mkPen((0, 0, 160), width=1.5)
+
+        plot = self.win.addPlot(title=title)
+        plot.addLegend(offset=(-1, 1))
+        plot.plot(np.arange(offset, first.size + offset) / 10, first, pen=light_blue, name=name_first)
+        plot.plot(np.arange(offset, second.size + offset) / 10, second, pen=dark_blue, name=name_second)
+        plot.setLabel("left", ylabel, yunit)
+        plot.setLabel("bottom", "t (s)")
+        plot.setRange(xRange=[0, 400])
+
+        return plot
 
 
-plot_power_inp = plot_bgr("", finnfoam.power_inp, wood.power_inp, air.power_inp, "P", "w")  # Power input
-plot_power_gen = plot_bgr("", finnfoam.power_gen, wood.power_gen, air.power_gen,  "P", "w")  # Power generated
+def main():
+    Main()
 
-win.nextRow()
-
-plot_temp_hot = plot_bgr("", finnfoam.temp_hot, wood.temp_hot, air.temp_hot, "T", "°C") # Temperature of hot side
-plot_temp_cold = plot_bgr("", finnfoam.temp_cold, wood.temp_cold, air.temp_cold, "T", "°C") # Temperature of cold side
-
-win.nextRow()
-
-#plot_power = plot_rgb("Power", finnfoam.power, wood.power, air.power, "P", "w")
-plot_finnfoam_both = plot_two("", finnfoam.temp_hot, finnfoam.temp_cold, "T", "°C", "Lämmin puoli", "Kylmä puoli" ) # Temperature difference of both sides
-plot_temp_diff = plot_bgr("", finnfoam.temp_diff, wood.temp_diff, air.temp_diff, "ΔT", "°C") #Temperature difference
-
-
-win.resize(1000, 1000)
-# Main loop
-app.exec_()
+main()
