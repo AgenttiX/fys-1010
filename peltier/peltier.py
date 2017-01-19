@@ -253,7 +253,7 @@ heat_capacity = 900                     # c (kg * degC)
 aluminium_area = 0.033 * 0.032           # x*y (m^2)
 thickness_finnfoam = 0.00942            # x (m)
 thickness_wood = 0.0088                 # x (m)
-thermal_conductivity_finnfoam = 0.033   # k (W/(m*K))         (http://www.finnfoam.fi)
+thermal_conductivity_finnfoam = 0.04   # k (W/(m*K)
 thermal_conductivity_wood = 0.16        # k (W/(m*K))   (oak) (http://www.engineeringtoolbox.com/)
 
 
