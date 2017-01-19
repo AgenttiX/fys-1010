@@ -199,6 +199,7 @@ class Measurement:
         print("Q_hot", self.qhot_engine)
         print("Q_cold", self.qcold_engine)
         print("Q_hot - Q_cold", self.qhot_engine - self.qcold_engine)
+        print("E_lost", -self.qcold_engine - self.work_gen + self.qhot_engine)
         print("\"Heat transfer efficiency\" (%)", self.work_gen / (self.qhot_engine - self.qcold_engine) * 100)
         print("Efficiency e", self.work_gen / self.qhot_engine)
         print("Ideal efficiency with the setup", 1 - (self.qcold_engine / self.qhot_engine))
@@ -207,6 +208,7 @@ class Measurement:
             print("Heat transfer through insulator, hot side", self.heat_loss_gen_hot)
             print("Heat transfer through insulator, cold side", self.heat_loss_gen_cold)
         print()
+        print("Total efficiency of cycle", self.work_gen/self.work_inp)
         # About the efficiency of peltier elements (#telok@IRCnet, 2016-07-27)
         # 19:10 < AgenttiX> Oletteko kokeilleet TECin ohjaamista Arduinolla? Toimisiko tämä kytkentä? http://garagelab.com/profiles/blogs/how-to-use-a-peltier-with-arduino
         # --
