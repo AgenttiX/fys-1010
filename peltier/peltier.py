@@ -24,7 +24,7 @@ import pyqtgraph as pg
 
 
 class Measurement:
-    def __init__(self, name, path, mass, heat_capacity, aluminium_area, insulator_thickness = 0, thermal_conductivity = 0):
+    def __init__(self, name, path, mass, heat_capacity, aluminium_area, insulator_thickness=0.0, thermal_conductivity=0.0):
         """
         This class holds the data of a single measurement
         :param path: path of measurement files
@@ -52,28 +52,29 @@ class Measurement:
         self.qhot_vec = self.readfile(path, "Qhot.txt")[0][:, 1]
         self.qhot_pump_vec = self.readfile(path, "Qhot_pump.txt")[0][:, 1]
         self.tc_initial = self.readfile(path, "Tc_initial.txt")[0][:, 1]
-        self.temp_cold = self.readfile(path, "Temperature1.txt")[0][:, 1]
-        self.temp_hot = self.readfile(path, "Temperature2.txt")[0][:, 1]
+        self.temp_cold_orig = self.readfile(path, "Temperature1.txt")[0][:, 1]
+        self.temp_hot_orig = self.readfile(path, "Temperature2.txt")[0][:, 1]
         self.voltage = self.readfile(path, "Voltage.txt")[0][:, 1]
 
         # Check when the power is applied
         # The peak voltage appears to be a good point for it
         self.power_inp_max = self.power_inp.max()
         self.enable_index = np.where(self.power_inp == self.power_inp_max)[0][0]
-        self.disable_index = np.argmin(np.ediff1d(self.power_inp))+1  # gets minium of consecutive elements of power vector
+        # Gets minimum of consecutive elements of power vector
+        self.disable_index = np.argmin(np.ediff1d(self.power_inp))+1
 
         # Computed values
-        self.temp_hot_start = np.mean(self.temp_hot[self.enable_index - 11:self.enable_index - 1])
-        self.temp_cold_start = np.mean(self.temp_cold[self.enable_index - 11:self.enable_index - 1])
+        self.temp_hot_start = np.mean(self.temp_hot_orig[self.enable_index - 11:self.enable_index - 1])
+        self.temp_cold_start = np.mean(self.temp_cold_orig[self.enable_index - 11:self.enable_index - 1])
         self.temp_start = (self.temp_hot_start + self.temp_cold_start)/2
-        self.temp_hot += (self.temp_cold_start - self.temp_hot_start)/2     #normalize temperatures to same level
-        self.temp_cold += (self.temp_hot_start - self.temp_cold_start)/2
-
+        # Normalise temperatures to same level
+        self.temp_hot = self.temp_hot_orig + (self.temp_cold_start - self.temp_hot_start)/2
+        self.temp_cold = self.temp_cold_orig + (self.temp_hot_start - self.temp_cold_start)/2
 
         self.temp_max = self.temp_hot.max()
         self.temp_min = self.temp_cold.min()
-        self.temp_peak_index = np.where(self.temp_hot == self.temp_max)[0][
-            0]  # is not exactly same as self.disable_index
+        # Is not exactly the same as self.disable_index
+        self.temp_peak_index = np.where(self.temp_hot == self.temp_max)[0][0]
 
         # Check when to end the measurement
         # The peak temperature of the cold side appears to be a good point for it
@@ -83,8 +84,6 @@ class Measurement:
         # Computed vectors
         self.temp_diff = self.temp_hot - self.temp_cold
         self.power = self.current * self.voltage
-
-
 
         # Times
         self.time_total = self.time_vec[self.stop_index]
@@ -112,21 +111,24 @@ class Measurement:
         self.work_inp = np.trapz(self.power_inp, dx=self.dtime)
         self.work_gen = np.trapz(self.power_gen, dx=self.dtime)
 
-        if (self.not_air):  # we are not considering case:air in which there is no insulation
+        # We are not considering case:air in which there is no insulation
+        if self.not_air:
             # Heat transfer speed through insulator, assuming that outside surface is at room temperature
-            self.heat_transfer_speed_hot  = thermal_conductivity * aluminium_area * (self.temp_hot - self.temp_start)/self.insulator_thickness
-            self.heat_transfer_speed_cold = thermal_conductivity * aluminium_area * (self.temp_start - self.temp_cold)/self.insulator_thickness
+            self.heat_transfer_speed_hot  = thermal_conductivity * aluminium_area * \
+                                            (self.temp_hot - self.temp_start)/self.insulator_thickness
+            self.heat_transfer_speed_cold = thermal_conductivity * aluminium_area * \
+                                            (self.temp_start - self.temp_cold)/self.insulator_thickness
 
             # Total leaked heat due to heat transfer
             self.heat_loss_pump_hot  = np.trapz(self.heat_transfer_speed_hot[self.enable_index : self.temp_peak_index], dx=self.dtime)
             self.heat_loss_pump_cold = np.trapz(self.heat_transfer_speed_cold[self.enable_index : self.temp_peak_index], dx=self.dtime)
             self.heat_loss_gen_hot   = np.trapz(self.heat_transfer_speed_hot[self.temp_peak_index : self.stop_index], dx=self.dtime)
-            self.heat_loss_gen_cold  = np.trapz(self.heat_transfer_speed_cold[self.temp_peak_index : self.stop_index], dx=self.dtime)    # it is negative because more heat flows out
+            self.heat_loss_gen_cold  = np.trapz(self.heat_transfer_speed_cold[self.temp_peak_index : self.stop_index], dx=self.dtime)   # it's negative because more heat flows out
 
-            # Esitmated Q_hot with regular resistance heater. Assumed linear heat heat rise.
-            self.Q_hot_resistor = self.work_inp / (1 + self.thermal_conductivity*self.aluminium_area*self.time_pump / ( 2*self.mass*self.heat_capacity*self.insulator_thickness ))
+            # Estimated Q_hot with regular resistance heater. Assumed linear heat heat rise.
+            self.qhot_resistor = self.work_inp / (1 + self.thermal_conductivity * self.aluminium_area * self.time_pump / (2 * self.mass * self.heat_capacity * self.insulator_thickness))
         else:   # Case: air and no insulation
-            self.Q_hot_resistor = self.work_inp
+            self.qhot_resistor = self.work_inp
 
     def readfile(self, path, filename):
         """ Parses a file created by the DataStudio measurement software
@@ -181,12 +183,12 @@ class Measurement:
         print("Ideal Carnot COP_hot", (self.temp_max+273.15)/(self.temp_max-self.temp_min))
         print("Ideal Carnot COP_cold", (self.temp_min+273.15)/(self.temp_max-self.temp_min))
 
-        if (self.not_air):
+        if self.not_air:
             print("Heat transfer through insulator, hot side", self.heat_loss_pump_hot)
             print("Heat transfer through insulator, cold side", self.heat_loss_pump_cold)
-            print("Estimated Q_hot with resistor", self.Q_hot_resistor)
+            print("Estimated Q_hot with resistor", self.qhot_resistor)
         else:
-            print("Estimated Q_hot with resistor (=energy input)", self.Q_hot_resistor)
+            print("Estimated Q_hot with resistor (=energy input)", self.qhot_resistor)
         #
         # I think it should be defined for Q_hot too. Yep, TODO that
         # Also calculate heatloss due to conduction TODO remove these comments when ready
@@ -201,7 +203,7 @@ class Measurement:
         print("Efficiency e", self.work_gen / self.qhot_engine)
         print("Ideal efficiency with the setup", 1 - (self.qcold_engine / self.qhot_engine))
         print("Ideal Carnot efficiency", (self.temp_max-self.temp_min)/(self.temp_max+273.15))
-        if (self.not_air):
+        if self.not_air:
             print("Heat transfer through insulator, hot side", self.heat_loss_gen_hot)
             print("Heat transfer through insulator, cold side", self.heat_loss_gen_cold)
         print()
@@ -216,7 +218,7 @@ class Measurement:
 def plot_bgr(title, first, second, third, ylabel="", yunit="", offset=0, name_first="Finnfoam", name_second="Puu", name_third="Ilma"):
     # for reference octave uses order [blue, green, red] for coloring, we use that order to get finnfoam to be blue
     plot = win.addPlot(title=title)
-    plot.addLegend(offset=(-1,1))
+    plot.addLegend(offset=(-1, 1))
     plot.plot(np.arange(offset, first.size+offset)/10, first, pen=blue, name=name_first)
     plot.plot(np.arange(offset, second.size+offset)/10, second, pen=green, name=name_second)
     plot.plot(np.arange(offset, third.size+offset)/10, third, pen=red, name=name_third)
@@ -233,7 +235,7 @@ def plot_two(title, first, second, ylabel="", yunit="", name_first="", name_seco
     dark_blue = pg.mkPen((0, 0, 160), width=1.5)
 
     plot = win.addPlot(title=title)
-    plot.addLegend(offset=(-1,1))
+    plot.addLegend(offset=(-1, 1))
     plot.plot(np.arange(offset, first.size+offset)/10, first, pen=light_blue, name=name_first)
     plot.plot(np.arange(offset, second.size+offset)/10, second, pen=dark_blue, name=name_second)
     plot.setLabel("left", ylabel, yunit)
@@ -244,13 +246,13 @@ def plot_two(title, first, second, ylabel="", yunit="", name_first="", name_seco
 
 
 # Constants
-mass = 0.019            # m (kg)
-heat_capacity = 900    # c (kg * degC)
-aluminium_area = 0.033 *0.032  # x*y (m^2)
-thickness_finnfoam = 0.00942  # x (m)
-thickness_wood = 0.0088       # x (m)
-thermal_conductivity_finnfoam = 0.033 # k (W/(m*K))         (http://www.finnfoam.fi)
-thermal_conductivity_wood = 0.16      # k (W/(m*K))   (oak) (http://www.engineeringtoolbox.com/)
+mass = 0.019                            # m (kg)
+heat_capacity = 900                     # c (kg * degC)
+aluminium_area = 0.033 * 0.032           # x*y (m^2)
+thickness_finnfoam = 0.00942            # x (m)
+thickness_wood = 0.0088                 # x (m)
+thermal_conductivity_finnfoam = 0.033   # k (W/(m*K))         (http://www.finnfoam.fi)
+thermal_conductivity_wood = 0.16        # k (W/(m*K))   (oak) (http://www.engineeringtoolbox.com/)
 
 
 # Initialise measurements
@@ -274,7 +276,7 @@ win = pg.GraphicsWindow(title="Peltier (Lämpövoimakoneet)")
 
 
 plot_power_inp = plot_bgr("", finnfoam.power_inp, wood.power_inp, air.power_inp, "P", "w")  # Power input
-plot_power_gen = plot_bgr("", finnfoam.power_gen, wood.power_gen, air.power_gen,  "P", "w", offset=finnfoam.disable_index)  # Power generated
+plot_power_gen = plot_bgr("", finnfoam.power_gen, wood.power_gen, air.power_gen,  "P", "w")  # Power generated
 
 win.nextRow()
 
@@ -288,6 +290,6 @@ plot_finnfoam_both = plot_two("", finnfoam.temp_hot, finnfoam.temp_cold, "T", "�
 plot_temp_diff = plot_bgr("", finnfoam.temp_diff, wood.temp_diff, air.temp_diff, "ΔT", "°C") #Temperature difference
 
 
-win.resize(1000,1000)
+win.resize(1000, 1000)
 # Main loop
 app.exec_()
