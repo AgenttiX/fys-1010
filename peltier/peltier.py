@@ -197,6 +197,7 @@ class Measurement:
         print("Ideal COP_cold with the setup", self.qcold_pump / (self.qhot_pump - self.qcold_pump))
         print("Ideal Carnot COP_hot", (self.temp_max+273.15)/(self.temp_max-self.temp_min))
         print("Ideal Carnot COP_cold", (self.temp_min+273.15)/(self.temp_max-self.temp_min))
+        print("Efficiency fraction out of ideal Carnot cooler", (self.qcold_pump / self.work_inp)/((self.temp_min+273.15)/(self.temp_max-self.temp_min)))
 
         if self.not_air:
             print("Heat transfer through insulator, hot side", self.heat_loss_pump_hot)
