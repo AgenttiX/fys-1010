@@ -132,7 +132,7 @@ class Measurement:
             self.heat_loss_gen_cold  = np.trapz(self.heat_transfer_speed_cold[self.temp_peak_index : self.stop_index], dx=self.dtime)   # it's negative because more heat flows out
 
             # Estimated Q_hot with regular resistance heater. Assumed linear heat heat rise.
-            self.qhot_resistor = self.work_inp / (1 + self.thermal_conductivity * self.aluminium_area * self.time_pump / (2 * self.mass * self.heat_capacity * self.insulator_thickness))
+            self.qhot_resistor = self.work_inp / (1 + self.thermal_conductivity * self.aluminium_area * self.time_pump / (self.mass * self.heat_capacity * self.insulator_thickness))
         else:   # Case: air and no insulation
             self.qhot_resistor = self.work_inp
 
