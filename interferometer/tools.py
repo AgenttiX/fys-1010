@@ -1,5 +1,5 @@
 import numpy as np
-
+from bokeh.models import Label
 
 class iterating_colors():
     """
@@ -100,7 +100,14 @@ def too_lazy_to_import_linear_regression_tool(x_axis, data_points):
 
     # https://en.wikipedia.org/wiki/Mean_squared_error
     # https://en.wikipedia.org/wiki/Standard_deviation
-    MSE = (1/(y_mat.size)) * np.sum(np.multiply((y_mat/x_mat-micro),(y_mat/x_mat-micro)))
+    # https://en.wikipedia.org/wiki/Simple_linear_regression#Normality_assumption
+    x_mean = np.sum(x_mat)/x_mat.size
+    dof = 1 # degrees of freedom
+    MSE = (1/(y_mat.size-dof)) * \
+            np.sum(np.multiply((y_mat-micro*x_mat),(y_mat-micro*x_mat))) / \
+            np.sum(np.multiply((x_mat-x_mean),(x_mat-x_mean)))
     err = np.sqrt(MSE)
 
     return micro, err
+
+

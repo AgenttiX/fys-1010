@@ -26,7 +26,8 @@ class data:
         meas_2_2 = np.array([[0.65, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1], [14, 13, 11, 9, 7, 4, 3]])
         self.meas_2_2 = meas_2_2.transpose()
 
-        self.atmospheric_pressure = 73.574  # cmHg
+        self.pressure_primitive_units = 73.574  # cmHg
+        self.pressure = 0.98090 * 1e5    # Pa
 
         # m (#), rot (°)
         meas_3_1 = np.array([[0, 20, 60, 80, 100], [0.6, 5.0, 6.9, 8.4, 9.4, 10.5]])
@@ -41,31 +42,69 @@ class data:
 
 def plot_wave_length():
 
-    fig = figure(title="Valon kulkema matka interferenssisiirtymien funktiona")
+    fig = figure(title="Valon kulkema matka interferenssisiirtymien funktiona",
+                 x_axis_label='m', y_axis_label="dₘ (μm)")
 
     distance = (50-data().meas_1[:,1]) * 2 * 1e-6
     m_count = data().meas_1[:,0]
 
-    fig.circle(m_count, distance, legend="mittausdata", size=3)
+    #fig.circle(m_count, distance, legend="mittausdata", size=10, fill_color="white")
 
     x = np.linspace(0,100,1000)
     k ,k_err = tools.too_lazy_to_import_linear_regression_tool(m_count, distance)
-    print("Kulmakerroin: ", k, "virhe: ", k_err)
-    fig.line(x, k*x, legend="sovite", line_width=2)
-    fig.line(x, (k+k_err) * x, line_width=1, color=(0,0,128), line_dash="dashed")
-    fig.line(x, (k-k_err) * x, legend="virherajat", line_width=1, color=(0,0,128), line_dash="dashed")
+    print("Wave length")
+    print("    slope i.e. lambda:", k, ", error: ", k_err)
+    fig.line(x, k*x*1e6, legend="sovite λ="+str(round(k*1e9))+"±"+str(round(k_err*1e9))+"nm", line_width=2)
+    fig.line(x, (k+k_err) * x*1e6, line_width=1, color=(0,0,128), line_dash="dashed")
+    fig.line(x, (k-k_err) * x*1e6, legend="virherajat", line_width=1, color=(0,0,128), line_dash="dashed")
+
+    fig.circle(m_count, distance*1e6, legend="mittausdata", size=10, color="black", fill_color="white", line_width=2)
 
     fig.legend.location = "top_left"
 
-    output_file("aallonpituus.html", title="Aallopituus")
-    show(fig)
+    output_file("wave_length.html", title="Aallopituus")
+
+    return fig
+
+
+def plot_refractive_index():
+    fig = figure(title="Taitekertoimen muutos paineen funktiona")
+
+    pressure_drop = data().meas_2_2[:,0]*1e5 # Assuming we measured pressure difference to current.
+    m_count = data().meas_2_2[:,1]
+
+    lambda_0 = 633e-9   # wavelength in vacuum (m)
+    n_0 = 1             # refractive index in vacuum ()
+    chamber_length = 0.03    # m (m)
+    delta_n = lambda_0 * m_count /(2*chamber_length)
+
+    x = np.linspace(0, 0.7e5, 1000)
+    k, k_err = tools.too_lazy_to_import_linear_regression_tool(pressure_drop, delta_n)
+    print("Refractive index")
+    print("    slope i.e. ∂n/∂p:", k, ", error:", k_err, ", n_room:", n_0 + k*data().pressure)
+    # no latex in bokeh :(
+    fig.line(x, k*x, legend="sovite ∂n/∂p=("+str(round(k*1e9,2))+"±"+str(round(k_err*1e9,2))+")*10⁻⁹", line_width=2)
+    fig.line(x, (k + k_err) * x, line_width=1, color=(0, 0, 128), line_dash="dashed")
+    fig.line(x, (k - k_err) * x, legend="virherajat", line_width=1, color=(0, 0, 128),
+             line_dash="dashed")
+
+    fig.circle(pressure_drop, delta_n, legend="mittausdata", size=10, color="black", fill_color="white", line_width=2)
+
+    fig.legend.location = "top_left"
+
+
+    output_file("refractive_index.html", title="Ilman taitekerroin")
+
+
+    return fig
 
 
 
 
+def main():
+    fig1 = plot_wave_length()
+    fig2 = plot_refractive_index()
 
+    show(column(fig1,fig2))
 
-
-
-
-plot_wave_length()
+main()
