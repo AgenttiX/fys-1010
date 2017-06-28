@@ -30,12 +30,12 @@ class data:
         self.pressure = 0.98090 * 1e5    # Pa
 
         # m (#), rot (°)
-        meas_3_1 = np.array([[0, 20, 60, 80, 100], [0.6, 5.0, 6.9, 8.4, 9.4, 10.5]])
+        meas_3_1 = np.array([[0, 20, 40, 60, 80, 100], [0.6, 5.0, 6.9, 8.4, 9.4, 10.5]])
         self.meas_3_1 = meas_3_1.transpose()
-        meas_3_2 = np.array([[0, 20, 60, 80, 100], [1.0, 5.0, 7.0, 8.4, 9.5, 10.6]])
+        meas_3_2 = np.array([[0, 20, 40, 60, 80, 100], [1.0, 5.0, 7.0, 8.4, 9.5, 10.6]])
         self.meas_3_2 = meas_3_2.transpose()
 
-        self.width_of_glass_plate = 5.59  # mm
+        self.width_of_glass_plate = 5.59e-3  # m
 
 
 
@@ -62,13 +62,11 @@ def plot_wave_length():
 
     fig.legend.location = "top_left"
 
-    output_file("wave_length.html", title="Aallopituus")
-
     return fig
 
 
-def plot_refractive_index():
-    fig = figure(title="Taitekertoimen muutos paineen funktiona")
+def plot_refractive_index_air():
+    fig = figure(title="Ilman taitekertoimen muutos paineen funktiona")
 
     pressure_drop = data().meas_2_2[:,0]*1e5 # Assuming we measured pressure difference to current.
     m_count = data().meas_2_2[:,1]
@@ -80,7 +78,7 @@ def plot_refractive_index():
 
     x = np.linspace(0, 0.7e5, 1000)
     k, k_err = tools.too_lazy_to_import_linear_regression_tool(pressure_drop, delta_n)
-    print("Refractive index")
+    print("Refractive index of air")
     print("    slope i.e. ∂n/∂p:", k, ", error:", k_err, ", n_room:", n_0 + k*data().pressure)
     # no latex in bokeh :(
     fig.line(x, k*x, legend="sovite ∂n/∂p=("+str(round(k*1e9,2))+"±"+str(round(k_err*1e9,2))+")*10⁻⁹", line_width=2)
@@ -93,18 +91,54 @@ def plot_refractive_index():
     fig.legend.location = "top_left"
 
 
-    output_file("refractive_index.html", title="Ilman taitekerroin")
+    return fig
+
+
+def plot_refractive_index_glass():
+    fig = figure(title="Lasin taitekertoimen muutos paineen funktiona")
+
+    m_count = data().meas_3_2[:,0]
+
+    angle_1 = data().meas_3_1[:,1]
+    angle_2 = data().meas_3_2[:, 1]
+    angle = ((angle_1 + angle_2)/2)*2*np.pi/360
+
+    lambda_0 = 633e-9 # Should we use the value we measured?
+    d = data().width_of_glass_plate
+
+    numerator =  (2*d - m_count*lambda_0) * (1- np.cos(angle))
+
+    denominator = 2*d*(1 - np.cos(angle)) - m_count*lambda_0
+
+
+    x = np.linspace(0, 1.30e-04, 1000)
+    k, k_err = tools.too_lazy_to_import_linear_regression_tool(denominator, numerator)
+    print("Refractive index of glass")
+    print("    slope", k, ", error:", k_err)
+
+    fig.line(x, k*x, legend="sovite ∂y/∂x=("+str(round(k,2))+"±"+str(round(k_err,2))+")", line_width=2)
+    fig.line(x, (k + k_err) * x, line_width=1, color=(0, 0, 128), line_dash="dashed")
+    fig.line(x, (k - k_err) * x, legend="virherajat", line_width=1, color=(0, 0, 128),
+             line_dash="dashed")
+
+    fig.circle(denominator, numerator, legend="mittausdata", size=10, color="black", fill_color="white", line_width=2)
+
+    fig.legend.location = "top_left"
 
 
     return fig
 
 
 
-
 def main():
     fig1 = plot_wave_length()
-    fig2 = plot_refractive_index()
+    fig2 = plot_refractive_index_air()
+    fig3 = plot_refractive_index_glass()
 
-    show(column(fig1,fig2))
+    output_file("plots.html", title="This is the title of most important kind") # todo make up better title
+
+    show(column(fig1,fig2,fig3))
+
+
 
 main()
