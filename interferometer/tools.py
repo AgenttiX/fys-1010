@@ -1,4 +1,5 @@
 import numpy as np
+from math import log10, floor
 from bokeh.models import Label
 
 class iterating_colors():
@@ -111,3 +112,56 @@ def too_lazy_to_import_linear_regression_tool(x_axis, data_points):
     return micro, err
 
 
+def print_to_latex_tabular(array, column_precisions=None, significant_figures=True):
+    """
+    Prints 2d-numpy arrays (or regular lists) to latex tabular format. Then just copy-paste it.
+
+    :param array: array to print (list or numpy array, type:float)
+    :param column_precisions: array of precisions for column (list or numpy array, type:int, len=columns)
+    :param significant_figures: if false then precision corresponds the number of digits
+    :return:
+
+    Examples:
+        column_precisions=[...,4,...], significant_figures=True:
+            0.0012345678 -> 0.001234
+        column_precisions=[...,4,...], significant_figures=False:
+            0.0012345678 -> 0.0012
+    """
+
+    if ((column_precisions != None) and (np.shape(array)[1] != len(column_precisions))):
+        raise "column_precisions should be vector of length of columns"
+
+    array_to_print = [["" for n in range(np.shape(array)[1])] for m in range(np.shape(array)[0])]
+
+    # convert array to printable form
+    for m in range(np.shape(array)[0]):
+        for n in range(np.shape(array)[1]):
+
+            if (column_precisions == None):
+                array_to_print[m][n] = str(array[m, n])
+            elif (significant_figures):
+                array_to_print[m][n] = str(round(array[m, n], -int(floor(log10(abs(array[m, n]))))+column_precisions[n]))
+            elif (column_precisions[n] > 0):
+                array_to_print[m][n] = str(round(array[m,n], column_precisions[n]))
+            # print no decimals (negative decimal indices permitted)
+            else:
+                array_to_print[m][n] = str(int(round(array[m, n], column_precisions[n])))
+
+    # find the column lengths (cells with most characters)
+    max_column_len = np.amax(np.vectorize(lambda cell: len(cell))(array_to_print), axis=0)
+
+    print("")
+    print("\\begin{tabular}{" + np.shape(array)[1]*"|l" + "|}\n", end="", sep="")
+    print("\\hline")
+    print((" & " * (np.shape(array)[1]-1) +" \\\\"))
+    print("\\hline")
+    for m in range(np.shape(array)[0]):
+        for n in range(np.shape(array)[1]):
+            print(("{:"+str(max_column_len[n])+"}").format(array_to_print[m][n]), end="", sep="")
+            if (n != np.shape(array)[1]-1):
+                print(" & ", end="", sep="")
+            else:
+                print(" \\\\\n", end="", sep="")
+    print("\\hline")
+    print("\end{tabular}")
+    print("")

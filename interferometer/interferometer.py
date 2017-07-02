@@ -7,7 +7,7 @@ a = np.array([[2,3.0,4], [1,2,3]])
 
 class data:
     """
-    Because python does not have structs
+    Because python does not have structures
     """
 
     # I don't care what it does as long it works. Now it is possible to call 'data().meas_2_1'
@@ -52,8 +52,6 @@ def plot_wave_length():
 
     x = np.linspace(0,100,1000)
     k ,k_err = tools.too_lazy_to_import_linear_regression_tool(m_count, distance)
-    print("Wave length")
-    print("    slope i.e. lambda:", k, ", error: ", k_err)
     fig.line(x, k*x*1e6, legend="sovite λ="+str(round(k*1e9))+"±"+str(round(k_err*1e9))+"nm", line_width=2)
     fig.line(x, (k+k_err) * x*1e6, line_width=1, color=(0,0,128), line_dash="dashed")
     fig.line(x, (k-k_err) * x*1e6, legend="virherajat", line_width=1, color=(0,0,128), line_dash="dashed")
@@ -61,6 +59,12 @@ def plot_wave_length():
     fig.circle(m_count, distance*1e6, legend="mittausdata", size=10, color="black", fill_color="white", line_width=2)
 
     fig.legend.location = "top_left"
+
+
+    print("Wave length")
+    print("    slope i.e. lambda:", k, ", error: ", k_err)
+
+
 
     return fig
 
@@ -78,8 +82,6 @@ def plot_refractive_index_air():
 
     x = np.linspace(0, 0.7e5, 1000)
     k, k_err = tools.too_lazy_to_import_linear_regression_tool(pressure_drop, delta_n)
-    print("Refractive index of air")
-    print("    slope i.e. ∂n/∂p:", k, ", error:", k_err, ", n_room:", n_0 + k*data().pressure)
     # no latex in bokeh :(
     fig.line(x, k*x, legend="sovite ∂n/∂p=("+str(round(k*1e9,2))+"±"+str(round(k_err*1e9,2))+")*10⁻⁹", line_width=2)
     fig.line(x, (k + k_err) * x, line_width=1, color=(0, 0, 128), line_dash="dashed")
@@ -89,6 +91,34 @@ def plot_refractive_index_air():
     fig.circle(pressure_drop, delta_n, legend="mittausdata", size=10, color="black", fill_color="white", line_width=2)
 
     fig.legend.location = "top_left"
+
+
+
+
+    air_pressure = data().pressure
+    air_pressure_err = 50  # Pa # this is just rough guess, it could be 10 Pa too
+
+    # I'm not using maxium error, but rather mean error
+
+    # f = n_0 + (∂n/∂p)*p_1
+
+    # ∂n/∂p = k
+    # p_1 = air_pressure
+
+    # Δ(∂n/∂p) = k_err
+    # Δ(p_1) = air_pressure_err
+
+    # ∂f/∂(n_0) = 0
+    # ∂f/∂(∂n/∂p) = air_pressure
+    # ∂f/∂(p_1) = k
+
+    # Δf = sqrt( (∂f/∂(∂n/∂p) * Δ(∂n/∂p))^2  +  (∂f/∂(p_1) * Δ(p_1))^2 )
+    Delta_f = np.sqrt((air_pressure * k_err)**2 + (k * air_pressure_err)**2)
+
+    print("Refractive index of air")
+    print("    slope i.e. ∂n/∂p:", k, ", error:", k_err, ", n_room:", n_0 + k*air_pressure)
+    print("    cumulative error in n_room:", Delta_f)
+    print("")
 
 
     return fig
@@ -107,8 +137,8 @@ def plot_refractive_index_glass():
     d = data().width_of_glass_plate
 
     numerator =  (2*d - m_count*lambda_0) * (1- np.cos(angle))
-
     denominator = 2*d*(1 - np.cos(angle)) - m_count*lambda_0
+    tools.print_to_latex_tabular(np.hstack((np.matrix(numerator).T, np.matrix(denominator).T)), column_precisions=[3,3])
 
 
     x = np.linspace(0, 1.30e-04, 1000)
@@ -129,15 +159,24 @@ def plot_refractive_index_glass():
     return fig
 
 
+def print_latex_tabulars():
+    tools.print_to_latex_tabular(data().meas_1, column_precisions=[0,1,1], significant_figures=False)
+    tools.print_to_latex_tabular(data().meas_2_2, column_precisions=[2, 1], significant_figures=False)
+    tools.print_to_latex_tabular(data().meas_3_2, column_precisions=[0, 1], significant_figures=False)
+
 
 def main():
     fig1 = plot_wave_length()
     fig2 = plot_refractive_index_air()
     fig3 = plot_refractive_index_glass()
 
-    output_file("plots.html", title="This is the title of most important kind") # todo make up better title
+    output_file("plots.html", title="This is the title of most important kind")
 
     show(column(fig1,fig2,fig3))
+
+    #print_latex_tabulars()
+
+
 
 
 
