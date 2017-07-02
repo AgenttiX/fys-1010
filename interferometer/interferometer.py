@@ -42,8 +42,7 @@ class data:
 
 def plot_wave_length():
 
-    fig = figure(title="Valon kulkema matka interferenssisiirtymien funktiona",
-                 x_axis_label='m', y_axis_label="dₘ (μm)")
+    fig = figure(x_axis_label='m', y_axis_label="dₘ (μm)") # title="Valon kulkema lisämatka interferenssisiirtymien funktiona",
 
     distance = (50-data().meas_1[:,1]) * 2 * 1e-6
     m_count = data().meas_1[:,0]
@@ -52,11 +51,12 @@ def plot_wave_length():
 
     x = np.linspace(0,100,1000)
     k ,k_err = tools.too_lazy_to_import_linear_regression_tool(m_count, distance)
-    fig.line(x, k*x*1e6, legend="sovite λ="+str(round(k*1e9))+"±"+str(round(k_err*1e9))+"nm", line_width=2)
+    fig.line(x, k*x*1e6, legend="sovite ∂dₘ/∂m = λ = "+str(round(k*1e9))+"nm", line_width=2)
     fig.line(x, (k+k_err) * x*1e6, line_width=1, color=(0,0,128), line_dash="dashed")
-    fig.line(x, (k-k_err) * x*1e6, legend="virherajat", line_width=1, color=(0,0,128), line_dash="dashed")
+    fig.line(x, (k-k_err) * x*1e6, legend="keskivirherajat λ = "+str(round(k*1e9))+"±"+str(round(k_err*1e9))+"nm",\
+             line_width=1, color=(0,0,128), line_dash="dashed")
 
-    fig.circle(m_count, distance*1e6, legend="mittausdata", size=10, color="black", fill_color="white", line_width=2)
+    fig.circle(m_count, distance*1e6, legend="mittauspisteet", size=10, color="black", fill_color="white", line_width=2)
 
     fig.legend.location = "top_left"
 
@@ -70,7 +70,7 @@ def plot_wave_length():
 
 
 def plot_refractive_index_air():
-    fig = figure(title="Ilman taitekertoimen muutos paineen funktiona")
+    fig = figure(x_axis_label='Δp (Pa)', y_axis_label="Δn")# title="Ilman taitekertoimen muutos paineen funktiona")
 
     pressure_drop = data().meas_2_2[:,0]*1e5 # Assuming we measured pressure difference to current.
     m_count = data().meas_2_2[:,1]
@@ -83,12 +83,12 @@ def plot_refractive_index_air():
     x = np.linspace(0, 0.7e5, 1000)
     k, k_err = tools.too_lazy_to_import_linear_regression_tool(pressure_drop, delta_n)
     # no latex in bokeh :(
-    fig.line(x, k*x, legend="sovite ∂n/∂p=("+str(round(k*1e9,2))+"±"+str(round(k_err*1e9,2))+")*10⁻⁹", line_width=2)
+    fig.line(x, k*x, legend="sovite ∂n/∂p = ("+str(round(k*1e9,2))+")*10⁻⁹ (1/Pa)", line_width=2)
     fig.line(x, (k + k_err) * x, line_width=1, color=(0, 0, 128), line_dash="dashed")
-    fig.line(x, (k - k_err) * x, legend="virherajat", line_width=1, color=(0, 0, 128),
-             line_dash="dashed")
+    fig.line(x, (k - k_err) * x, legend="keskivirherajat ∂n/∂p = ("+str(round(k*1e9,2))+"±"+str(round(k_err*1e9,2))+")*10⁻⁹ (1/Pa)",\
+             line_width=1, color=(0, 0, 128),line_dash="dashed")
 
-    fig.circle(pressure_drop, delta_n, legend="mittausdata", size=10, color="black", fill_color="white", line_width=2)
+    fig.circle(pressure_drop, delta_n, legend="mittauspisteet", size=10, color="black", fill_color="white", line_width=2)
 
     fig.legend.location = "top_left"
 
@@ -125,7 +125,7 @@ def plot_refractive_index_air():
 
 
 def plot_refractive_index_glass():
-    fig = figure(title="Lasin taitekertoimen muutos paineen funktiona")
+    fig = figure(x_axis_label='nimittäjä (m)', y_axis_label="osoittaja (m)")# title="Lasin taitekertoimen muutos paineen funktiona")
 
     m_count = data().meas_3_2[:,0]
 
@@ -138,7 +138,7 @@ def plot_refractive_index_glass():
 
     numerator =  (2*d - m_count*lambda_0) * (1- np.cos(angle))
     denominator = 2*d*(1 - np.cos(angle)) - m_count*lambda_0
-    tools.print_to_latex_tabular(np.hstack((np.matrix(numerator).T, np.matrix(denominator).T)), column_precisions=[3,3])
+    #tools.print_to_latex_tabular(np.hstack((np.matrix(numerator).T, np.matrix(denominator).T)), column_precisions=[3,3])
 
 
     x = np.linspace(0, 1.30e-04, 1000)
@@ -146,12 +146,12 @@ def plot_refractive_index_glass():
     print("Refractive index of glass")
     print("    slope", k, ", error:", k_err)
 
-    fig.line(x, k*x, legend="sovite ∂y/∂x=("+str(round(k,2))+"±"+str(round(k_err,2))+")", line_width=2)
+    fig.line(x, k*x, legend="sovite ∂y/∂x = "+str(round(k,2)), line_width=2)
     fig.line(x, (k + k_err) * x, line_width=1, color=(0, 0, 128), line_dash="dashed")
-    fig.line(x, (k - k_err) * x, legend="virherajat", line_width=1, color=(0, 0, 128),
-             line_dash="dashed")
+    fig.line(x, (k - k_err) * x, legend="keskivirherajat ∂y/∂x = ("+str(round(k,2))+"±"+str(round(k_err,2))+")",\
+             line_width=1, color=(0, 0, 128), line_dash="dashed")
 
-    fig.circle(denominator, numerator, legend="mittausdata", size=10, color="black", fill_color="white", line_width=2)
+    fig.circle(denominator, numerator, legend="mittauspisteet", size=10, color="black", fill_color="white", line_width=2)
 
     fig.legend.location = "top_left"
 
