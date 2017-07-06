@@ -51,7 +51,7 @@ def plot_wave_length():
 
     x = np.linspace(0,100,1000)
     k ,k_err = tools.too_lazy_to_import_linear_regression_tool(m_count, distance)
-    fig.line(x, k*x*1e6, legend="sovite ∂dₘ/∂m = λ = "+str(round(k*1e9))+"nm", line_width=2)
+    fig.line(x, k*x*1e6, legend="sovite ∂dₗ/∂m = λ = "+str(round(k*1e9))+"nm", line_width=2)
     fig.line(x, (k+k_err) * x*1e6, line_width=1, color=(0,0,128), line_dash="dashed")
     fig.line(x, (k-k_err) * x*1e6, legend="keskivirherajat λ = "+str(round(k*1e9))+"±"+str(round(k_err*1e9))+"nm",\
              line_width=1, color=(0,0,128), line_dash="dashed")
