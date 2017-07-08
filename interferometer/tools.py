@@ -70,7 +70,7 @@ class iterating_colors():
     def reset(self):
         self.current_index = 0
 
-def too_lazy_to_import_linear_regression_tool(x_axis, data_points):
+def linear_regression_origo(x_axis, data_points):
     """
     This fuction calulates linear regresion (slope and error) for line which goes through origo.
     The approach is rather manual, but precise and clear.

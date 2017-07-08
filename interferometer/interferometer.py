@@ -27,7 +27,7 @@ class data:
         self.meas_2_2 = meas_2_2.transpose()
 
         self.pressure_primitive_units = 73.574  # cmHg
-        self.pressure = 0.98090 * 1e5    # Pa
+        self.pressure = 0.98091 * 1e5    # Pa
 
         # m (#), rot (°)
         meas_3_1 = np.array([[0, 20, 40, 60, 80, 100], [0.6, 5.0, 6.9, 8.4, 9.4, 10.5]])
@@ -42,7 +42,7 @@ class data:
 
 def plot_wave_length():
 
-    fig = figure(x_axis_label='m', y_axis_label="dₘ (μm)") # title="Valon kulkema lisämatka interferenssisiirtymien funktiona",
+    fig = figure(x_axis_label='m', y_axis_label="dₗ (μm)") # title="Valon kulkema lisämatka interferenssisiirtymien funktiona",
 
     distance = (50-data().meas_1[:,1]) * 2 * 1e-6
     m_count = data().meas_1[:,0]
@@ -50,7 +50,7 @@ def plot_wave_length():
     #fig.circle(m_count, distance, legend="mittausdata", size=10, fill_color="white")
 
     x = np.linspace(0,100,1000)
-    k ,k_err = tools.too_lazy_to_import_linear_regression_tool(m_count, distance)
+    k ,k_err = tools.linear_regression_origo(m_count, distance)
     fig.line(x, k*x*1e6, legend="sovite ∂dₗ/∂m = λ = "+str(round(k*1e9))+"nm", line_width=2)
     fig.line(x, (k+k_err) * x*1e6, line_width=1, color=(0,0,128), line_dash="dashed")
     fig.line(x, (k-k_err) * x*1e6, legend="keskivirherajat λ = "+str(round(k*1e9))+"±"+str(round(k_err*1e9))+"nm",\
@@ -62,7 +62,9 @@ def plot_wave_length():
 
 
     print("Wave length")
-    print("    slope i.e. lambda:", k, ", error: ", k_err)
+    print("    slope i.e. lambda:", k, ", error: ", k_err,\
+          ", maxium range in deviation:", np.sqrt((k_err/np.sqrt(5))**2 + k_err**2))
+
 
 
 
@@ -81,9 +83,9 @@ def plot_refractive_index_air():
     delta_n = lambda_0 * m_count /(2*chamber_length)
 
     x = np.linspace(0, 0.7e5, 1000)
-    k, k_err = tools.too_lazy_to_import_linear_regression_tool(pressure_drop, delta_n)
+    k, k_err = tools.linear_regression_origo(pressure_drop, delta_n)
     # no latex in bokeh :(
-    fig.line(x, k*x, legend="sovite ∂n/∂p = ("+str(round(k*1e9,2))+")*10⁻⁹ (1/Pa)", line_width=2)
+    fig.line(x, k*x, legend="sovite ∂(Δn)/∂(Δp) = ("+str(round(k*1e9,2))+")*10⁻⁹ (1/Pa)", line_width=2)
     fig.line(x, (k + k_err) * x, line_width=1, color=(0, 0, 128), line_dash="dashed")
     fig.line(x, (k - k_err) * x, legend="keskivirherajat ∂n/∂p = ("+str(round(k*1e9,2))+"±"+str(round(k_err*1e9,2))+")*10⁻⁹ (1/Pa)",\
              line_width=1, color=(0, 0, 128),line_dash="dashed")
@@ -113,11 +115,20 @@ def plot_refractive_index_air():
     # ∂f/∂(p_1) = k
 
     # Δf = sqrt( (∂f/∂(∂n/∂p) * Δ(∂n/∂p))^2  +  (∂f/∂(p_1) * Δ(p_1))^2 )
-    Delta_f = np.sqrt((air_pressure * k_err)**2 + (k * air_pressure_err)**2)
+
+    # INCORRECT
+    # INCORRECT
+    m_f = np.sqrt((air_pressure * k_err)**2 + (k * air_pressure_err)**2)
+    Delta_f = np.abs(air_pressure) * k_err + np.abs(k) * air_pressure_err
+    # INCORRECT
+    # INCORRECT
+
 
     print("Refractive index of air")
-    print("    slope i.e. ∂n/∂p:", k, ", error:", k_err, ", n_room:", n_0 + k*air_pressure)
-    print("    cumulative error in n_room:", Delta_f)
+    print("    slope i.e. ∂n/∂p:", k, ", error:", k_err, ", n_room:", n_0 + k*air_pressure,\
+          ", maxium range in deviation:", np.sqrt((k_err/np.sqrt(7))**2 + k_err**2))
+    print("    [INCORRECT]cumulative mean error in n_room:", m_f)
+    print("    [INCORRECT]cumulative maxium error in n_room:", Delta_f)
     print("")
 
 
@@ -142,9 +153,10 @@ def plot_refractive_index_glass():
 
 
     x = np.linspace(0, 1.30e-04, 1000)
-    k, k_err = tools.too_lazy_to_import_linear_regression_tool(denominator, numerator)
+    k, k_err = tools.linear_regression_origo(denominator, numerator)
     print("Refractive index of glass")
-    print("    slope", k, ", error:", k_err)
+    print("    slope", k, ", error:", k_err,\
+          ", maxium range in deviation:", np.sqrt((k_err/np.sqrt(6))**2 + k_err**2))
 
     fig.line(x, k*x, legend="sovite ∂y/∂x = "+str(round(k,2)), line_width=2)
     fig.line(x, (k + k_err) * x, line_width=1, color=(0, 0, 128), line_dash="dashed")
@@ -162,7 +174,11 @@ def plot_refractive_index_glass():
 def print_latex_tabulars():
     tools.print_to_latex_tabular(data().meas_1, column_precisions=[0,1,1], significant_figures=False)
     tools.print_to_latex_tabular(data().meas_2_2, column_precisions=[2, 1], significant_figures=False)
-    tools.print_to_latex_tabular(data().meas_3_2, column_precisions=[0, 1], significant_figures=False)
+
+    angle_1 = data().meas_3_1
+    angle_2 = data().meas_3_2
+    angle_mean = ((angle_1 + angle_2) / 2)
+    tools.print_to_latex_tabular(angle_mean, column_precisions=[0, 1], significant_figures=False)
 
 
 def main():
