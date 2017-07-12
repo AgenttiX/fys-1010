@@ -116,19 +116,15 @@ def plot_refractive_index_air():
 
     # Δf = sqrt( (∂f/∂(∂n/∂p) * Δ(∂n/∂p))^2  +  (∂f/∂(p_1) * Δ(p_1))^2 )
 
-    # INCORRECT
-    # INCORRECT
     m_f = np.sqrt((air_pressure * k_err)**2 + (k * air_pressure_err)**2)
     Delta_f = np.abs(air_pressure) * k_err + np.abs(k) * air_pressure_err
-    # INCORRECT
-    # INCORRECT
 
 
     print("Refractive index of air")
     print("    slope i.e. ∂n/∂p:", k, ", error:", k_err, ", n_room:", n_0 + k*air_pressure,\
           ", maxium range in deviation:", np.sqrt((k_err/np.sqrt(7))**2 + k_err**2))
-    print("    [INCORRECT]cumulative mean error in n_room:", m_f)
-    print("    [INCORRECT]cumulative maxium error in n_room:", Delta_f)
+    print("    cumulative mean error in n_room:", m_f)
+    print("    cumulative maxium error in n_room:", Delta_f)
     print("")
 
 
