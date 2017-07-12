@@ -51,10 +51,9 @@ def plot_wave_length():
 
     x = np.linspace(0,100,1000)
     k ,k_err = tools.linear_regression_origo(m_count, distance)
-    fig.line(x, k*x*1e6, legend="sovite ∂dₗ/∂m = λ = "+str(round(k*1e9))+"nm", line_width=2)
+    fig.line(x, k*x*1e6, line_width=2, legend="sovite")# legend="sovite ∂dₗ/∂m = λ = "+str(round(k*1e9))+"nm")
     fig.line(x, (k+k_err) * x*1e6, line_width=1, color=(0,0,128), line_dash="dashed")
-    fig.line(x, (k-k_err) * x*1e6, legend="keskivirherajat λ = "+str(round(k*1e9))+"±"+str(round(k_err*1e9))+"nm",\
-             line_width=1, color=(0,0,128), line_dash="dashed")
+    fig.line(x, (k-k_err) * x*1e6, line_width=1, color=(0,0,128), line_dash="dashed", legend="keskivirherajat")# legend="keskivirherajat λ = "+str(round(k*1e9))+"±"+str(round(k_err*1e9))+"nm")
 
     fig.circle(m_count, distance*1e6, legend="mittauspisteet", size=10, color="black", fill_color="white", line_width=2)
 
@@ -85,10 +84,9 @@ def plot_refractive_index_air():
     x = np.linspace(0, 0.7e5, 1000)
     k, k_err = tools.linear_regression_origo(pressure_drop, delta_n)
     # no latex in bokeh :(
-    fig.line(x, k*x, legend="sovite ∂(Δn)/∂(Δp) = ("+str(round(k*1e9,2))+")*10⁻⁹ (1/Pa)", line_width=2)
+    fig.line(x, k*x, line_width=2, legend="sovite")# legend="sovite ∂(Δn)/∂(Δp) = ("+str(round(k*1e9,2))+")*10⁻⁹ (1/Pa)")
     fig.line(x, (k + k_err) * x, line_width=1, color=(0, 0, 128), line_dash="dashed")
-    fig.line(x, (k - k_err) * x, legend="keskivirherajat ∂n/∂p = ("+str(round(k*1e9,2))+"±"+str(round(k_err*1e9,2))+")*10⁻⁹ (1/Pa)",\
-             line_width=1, color=(0, 0, 128),line_dash="dashed")
+    fig.line(x, (k - k_err) * x, line_width=1, color=(0, 0, 128),line_dash="dashed", legend="keskivirherajat")# legend="keskivirherajat ∂(Δn)/∂(Δp) = ("+str(round(k*1e9,2))+"±"+str(round(k_err*1e9,2))+")*10⁻⁹ (1/Pa)")
 
     fig.circle(pressure_drop, delta_n, legend="mittauspisteet", size=10, color="black", fill_color="white", line_width=2)
 
@@ -154,10 +152,9 @@ def plot_refractive_index_glass():
     print("    slope", k, ", error:", k_err,\
           ", maxium range in deviation:", np.sqrt((k_err/np.sqrt(6))**2 + k_err**2))
 
-    fig.line(x, k*x, legend="sovite ∂y/∂x = "+str(round(k,2)), line_width=2)
+    fig.line(x, k*x, line_width=2, legend="sovite")# legend="sovite ∂y/∂x = "+str(round(k,2)))
     fig.line(x, (k + k_err) * x, line_width=1, color=(0, 0, 128), line_dash="dashed")
-    fig.line(x, (k - k_err) * x, legend="keskivirherajat ∂y/∂x = ("+str(round(k,2))+"±"+str(round(k_err,2))+")",\
-             line_width=1, color=(0, 0, 128), line_dash="dashed")
+    fig.line(x, (k - k_err) * x, line_width=1, color=(0, 0, 128), line_dash="dashed", legend="keskivirherajat")# legend="keskivirherajat ∂y/∂x = ("+str(round(k,2))+"±"+str(round(k_err,2))+")")
 
     fig.circle(denominator, numerator, legend="mittauspisteet", size=10, color="black", fill_color="white", line_width=2)
 
