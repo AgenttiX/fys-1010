@@ -137,7 +137,7 @@ def print_to_latex_tabular(matrix, column_precisions=None, significant_figures=F
 
 
     # I f***ing hate numpy's s***ty and poor arrays. In this case the second dimension is totally
-    # undefined in cases it is an 1D-array. So some extra unnecessary code is required for
+    # undefined when it is an 1D-array. So some extra unnecessary code is required for
     # ridiculously simple things. This is NOT what python ought to be.
     array = np.matrix(matrix) # here I have contradictory naming just for joy of python
 
