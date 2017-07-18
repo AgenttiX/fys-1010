@@ -161,12 +161,16 @@ def print_to_latex_tabular(matrix, column_precisions=None, significant_figures=F
             if (col_pres is None):
                 array_to_print[m][n] = str(array[m, n])
             elif (significant_figures):
-                # logarithm and value of exact zero
+                # logarithm and value of exact zero is not a good combination
                 if (not math.isclose(array[m, n], 0)):
-                    pres = -int(floor(log10(abs(array[m, n]))))+col_pres[n]
+                    pres = -int(floor(log10(abs(array[m, n]))))+col_pres[n]-1
                 else:
                     pres = col_pres[n]
-                array_to_print[m][n] = ("{:." + str(pres) + "f}").format(round(array[m, n], pres))
+
+                if (pres>0):
+                    array_to_print[m][n] = ("{:." + str(pres) + "f}").format(round(array[m, n], pres))
+                else:
+                    array_to_print[m][n] = str(int(round(array[m, n], pres)))
 
             elif ((not significant_figures) and (col_pres[n] > 0)):
                 pres = col_pres[n]

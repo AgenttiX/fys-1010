@@ -2,7 +2,7 @@
 
 import numpy as np
 import tools
-import external_data
+import external_data # The data module can be downloaded from overleaf project.
 
 
 def print_tabulars():
@@ -13,7 +13,7 @@ def print_tabulars():
 
     # the full measurement, expect top row (beacause of rounding).
     table_mat = np.concatenate((np.matrix(voltage).T, dat*1000), axis=1)
-    tools.print_to_latex_tabular(table_mat, column_precisions=1)
+    tools.print_to_latex_tabular(table_mat, column_precisions=[0,1,1,1,1,1,1])
 
     # top_row_of_table_mat
     # tools.print_to_latex_tabular(current, column_precisions=2)
