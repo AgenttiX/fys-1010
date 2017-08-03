@@ -5,12 +5,14 @@ import tools
 import external_data # The data module can be downloaded from overleaf project.
 
 
-def print_tabulars():
-    [dat, voltage, current, N, R, b] = external_data.read_data()
+def print_data_tabulars():
+    [dat, voltage, current, N, R, b, K_r] = external_data.read_data()
 
+    print("Voltage and current")
     volt_curr = np.concatenate((np.matrix(voltage).T, np.matrix(current).T),axis=1) # second dimension
     tools.print_to_latex_tabular(volt_curr, column_precisions=[0,2])
 
+    print("The measurement")
     # the full measurement, expect top row (beacause of rounding).
     table_mat = np.concatenate((np.matrix(voltage).T, dat*1000), axis=1)
     tools.print_to_latex_tabular(table_mat, column_precisions=[0,1,1,1,1,1,1])
@@ -18,15 +20,29 @@ def print_tabulars():
     # top_row_of_table_mat
     # tools.print_to_latex_tabular(current, column_precisions=2)
 
+    print("Helmholtz coil information")
     # other single values, the leading zeros reserve blank space for later editing
-    tools.print_to_latex_tabular([[0,N],[0,R],[0,b]], column_precisions=3, significant_figures=True)
+    tools.print_to_latex_tabular([[0,N],[0,R],[0,b],[0,K_r]], column_precisions=3, significant_figures=True)
 
+def magnet_field():
+    """
+    Task 7 instruction-sheet.
+    :return:
+    """
+    # TODO VIRHERAJAT ILMOITETTUUN TARKKUUTEEN
+    [dat, U, I, N, R, b, K_r] = external_data.read_data()
+    # equation 10
+    B = K_r*I
+    # milliamperes
+    tools.print_to_latex_tabular(np.matrix(B).T*1e3, column_precisions=5)
 
 
 
 def Main():
-    pass
-    #print_tabulars()
+    print("## Data tabulars ##\n")
+    print_data_tabulars()
+    print("\n\n## Magnet field (7), in mT ##")
+    magnet_field()
 
 
 Main()
