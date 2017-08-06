@@ -5,6 +5,7 @@ from math import log10, floor
 import math
 from bokeh.models import Label
 
+
 class iterating_colors():
     """
     This class is made to mimic matlab-like color plotting behavior. Calling get_next() method
@@ -73,6 +74,7 @@ class iterating_colors():
     def reset(self):
         self.current_index = 0
 
+
 def linear_regression_origo(x_axis, data_points):
     """
     This fuction calulates linear regresion (slope and error) for line which goes through origo.
@@ -121,7 +123,7 @@ def print_to_latex_tabular(matrix, column_precisions=None, significant_figures=F
 
     :param matrix:               matrix to print
                                     (list<float> or numpy_array<float>)
-    :param column_precision:   single value OR array of precisions for each column
+    :param column_precisions:   single value OR array of precisions for each column
                                     (int, list<int> or numpy_array<int>, len=columns)
     :param significant_figures: if false then the column_precisions corresponds normal decimal precision
                                 if true then column_precisions corresponds the number of numbers to be printed
