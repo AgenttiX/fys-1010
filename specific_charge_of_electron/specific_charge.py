@@ -1,8 +1,12 @@
-# insert copyleft licence here
+# insert copyleft license here
 
 import numpy as np
 import tools
 import external_data # The data module can be downloaded from overleaf project.
+
+# import plotly.offline as py
+# import plotly.graph_objs as go
+import matplotlib.pyplot as plt
 
 
 def print_data_tabulars():
@@ -37,12 +41,54 @@ def magnet_field():
     tools.print_to_latex_tabular(np.matrix(B).T*1e3, column_precisions=5)
 
 
-
-def Main():
+def main():
     print("## Data tabulars ##\n")
     print_data_tabulars()
     print("\n\n## Magnet field (7), in mT ##")
     magnet_field()
 
+    dat, voltage, current, N, R, b, K_r = external_data.read_data()
 
-Main()
+    magnetic_field = K_r*current
+    # print(K_r)
+    # print(current)
+    print(magnetic_field)
+
+    qm_array = np.zeros((6, 6))
+
+    for voltage_i in range(6):
+        for current_i in range(6):
+            qm_array[voltage_i, current_i] = (2*voltage[voltage_i]) / ( (magnetic_field[current_i]**2) * ((dat[voltage_i, current_i]*0.5)**2))
+
+    # print(qm_array)
+
+    print("q/m e11")
+    tools.print_to_latex_tabular(qm_array*1e-11, column_precisions=[4,4,4,4,4,4])
+
+    # plot_data = [
+    #     go.Histogram(x=qm_array.flatten())
+    # ]
+    # py.plot(plot_data, filename="histogram.html")
+
+    qm_min = qm_array.min()
+    qm_max = qm_array.max()
+
+    print("Min:", qm_min)
+    print("Max:", qm_max)
+
+    qm_range = qm_max - qm_min
+    qm_bar_width = qm_range / 6
+    print("Range:", qm_range)
+    print("Bar width", qm_bar_width)
+
+    print("Most likely:", qm_min + (qm_bar_width*1.5))
+
+    plt.hist(qm_array.flatten(), bins=6)
+    plt.xlabel("Ominaisvaraus (C/kg)")
+    plt.ylabel("Frekvenssi (kpl)")
+    plt.show()
+
+    print("Theoretical:", 1.6021766208e-19 / 9.10938356e-31)
+
+
+main()
