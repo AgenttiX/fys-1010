@@ -41,6 +41,14 @@ def magnet_field():
     tools.print_to_latex_tabular(np.matrix(B).T*1e3, column_precisions=5)
 
 
+def magnet_field_calc():
+    [dat, U, I, N, R, b, K_r] = external_data.read_data()
+    mikro = 1.2566370614*1e-6
+    K = mikro * N * R**2 / ((b/2)**2 + R**2)**(3/2)
+    print("Verrannollisuuskertoimet")
+    print("K:",K,"  K_r:", K_r, " eta:", K_r/K)
+
+
 def main():
     print("## Data tabulars ##\n")
     print_data_tabulars()
@@ -89,6 +97,8 @@ def main():
     plt.show()
 
     print("Theoretical:", 1.6021766208e-19 / 9.10938356e-31)
+
+    magnet_field_calc()
 
 
 main()
