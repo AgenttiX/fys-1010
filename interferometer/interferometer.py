@@ -3,7 +3,8 @@ from bokeh.plotting import figure, show, output_file
 from bokeh.layouts import column
 import tools
 
-a = np.array([[2,3.0,4], [1,2,3]])
+a = np.array([[2, 3.0, 4], [1, 2, 3]])
+
 
 class data:
     """
@@ -38,16 +39,14 @@ class data:
         self.width_of_glass_plate = 5.59e-3  # m
 
 
-
-
 def plot_wave_length():
 
     fig = figure(x_axis_label='m', y_axis_label="dₗ (μm)") # title="Valon kulkema lisämatka interferenssisiirtymien funktiona",
 
-    distance = (50-data().meas_1[:,1]) * 2 * 1e-6
-    m_count = data().meas_1[:,0]
+    distance = (50-data().meas_1[:, 1]) * 2 * 1e-6
+    m_count = data().meas_1[:, 0]
 
-    #fig.circle(m_count, distance, legend="mittausdata", size=10, fill_color="white")
+    # fig.circle(m_count, distance, legend="mittausdata", size=10, fill_color="white")
 
     x = np.linspace(0,100,1000)
     k ,k_err = tools.linear_regression_origo(m_count, distance)
@@ -59,13 +58,9 @@ def plot_wave_length():
 
     fig.legend.location = "top_left"
 
-
     print("Wave length")
-    print("    slope i.e. lambda:", k, ", error: ", k_err,\
+    print("    slope i.e. lambda:", k, ", error: ", k_err,
           ", maxium range in deviation:", np.sqrt((k_err/np.sqrt(5))**2 + k_err**2))
-
-
-
 
     return fig
 
@@ -92,9 +87,6 @@ def plot_refractive_index_air():
 
     fig.legend.location = "top_left"
 
-
-
-
     air_pressure = data().pressure
     air_pressure_err = 50  # Pa # this is just rough guess, it could be 10 Pa too
 
@@ -117,20 +109,19 @@ def plot_refractive_index_air():
     m_f = np.sqrt((air_pressure * k_err)**2 + (k * air_pressure_err)**2)
     Delta_f = np.abs(air_pressure) * k_err + np.abs(k) * air_pressure_err
 
-
     print("Refractive index of air")
-    print("    slope i.e. ∂n/∂p:", k, ", error:", k_err, ", n_room:", n_0 + k*air_pressure,\
+    print("    slope i.e. ∂n/∂p:", k, ", error:", k_err, ", n_room:", n_0 + k*air_pressure,
           ", maxium range in deviation:", np.sqrt((k_err/np.sqrt(7))**2 + k_err**2))
     print("    cumulative mean error in n_room:", m_f)
     print("    cumulative maxium error in n_room:", Delta_f)
     print("")
 
-
     return fig
 
 
 def plot_refractive_index_glass():
-    fig = figure(x_axis_label='nimittäjä (m)', y_axis_label="osoittaja (m)")# title="Lasin taitekertoimen muutos paineen funktiona")
+    fig = figure(x_axis_label='nimittäjä (m)', y_axis_label="osoittaja (m)")
+    # title="Lasin taitekertoimen muutos paineen funktiona")
 
     m_count = data().meas_3_2[:,0]
 
@@ -143,23 +134,23 @@ def plot_refractive_index_glass():
 
     numerator =  (2*d - m_count*lambda_0) * (1- np.cos(angle))
     denominator = 2*d*(1 - np.cos(angle)) - m_count*lambda_0
-    #tools.print_to_latex_tabular(np.hstack((np.matrix(numerator).T, np.matrix(denominator).T)), column_precisions=[3,3])
-
+    # tools.print_to_latex_tabular(
+    #     np.hstack((np.matrix(numerator).T, np.matrix(denominator).T)), column_precisions=[3,3])
 
     x = np.linspace(0, 1.30e-04, 1000)
     k, k_err = tools.linear_regression_origo(denominator, numerator)
     print("Refractive index of glass")
-    print("    slope", k, ", error:", k_err,\
+    print("    slope", k, ", error:", k_err,
           ", maxium range in deviation:", np.sqrt((k_err/np.sqrt(6))**2 + k_err**2))
 
-    fig.line(x, k*x, line_width=2, legend="sovite")# legend="sovite ∂y/∂x = "+str(round(k,2)))
+    fig.line(x, k*x, line_width=2, legend="sovite") # legend="sovite ∂y/∂x = "+str(round(k,2)))
     fig.line(x, (k + k_err) * x, line_width=1, color=(0, 0, 128), line_dash="dashed")
-    fig.line(x, (k - k_err) * x, line_width=1, color=(0, 0, 128), line_dash="dashed", legend="keskivirherajat")# legend="keskivirherajat ∂y/∂x = ("+str(round(k,2))+"±"+str(round(k_err,2))+")")
+    fig.line(x, (k - k_err) * x, line_width=1, color=(0, 0, 128), line_dash="dashed", legend="keskivirherajat")
+    # legend="keskivirherajat ∂y/∂x = ("+str(round(k,2))+"±"+str(round(k_err,2))+")")
 
     fig.circle(denominator, numerator, legend="mittauspisteet", size=10, color="black", fill_color="white", line_width=2)
 
     fig.legend.location = "top_left"
-
 
     return fig
 
@@ -181,12 +172,10 @@ def main():
 
     output_file("plots.html", title="This is the title of most important kind")
 
-    show(column(fig1,fig2,fig3))
+    show(column(fig1, fig2, fig3))
 
-    #print_latex_tabulars()
-
-
+    # print_latex_tabulars()
 
 
-
-main()
+if __name__ == "__main__":
+    main()

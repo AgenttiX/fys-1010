@@ -13,20 +13,21 @@ def print_data_tabulars():
     [dat, voltage, current, N, R, b, K_r] = external_data.read_data()
 
     print("Voltage and current")
-    volt_curr = np.concatenate((np.matrix(voltage).T, np.matrix(current).T),axis=1) # second dimension
-    tools.print_to_latex_tabular(volt_curr, column_precisions=[0,2])
+    volt_curr = np.concatenate((np.matrix(voltage).T, np.matrix(current).T), axis=1)  # second dimension
+    tools.print_to_latex_tabular(volt_curr, column_precisions=[0, 2])
 
     print("The measurement")
     # the full measurement, expect top row (beacause of rounding).
     table_mat = np.concatenate((np.matrix(voltage).T, dat*1000), axis=1)
-    tools.print_to_latex_tabular(table_mat, column_precisions=[0,1,1,1,1,1,1])
+    tools.print_to_latex_tabular(table_mat, column_precisions=[0, 1, 1, 1, 1, 1, 1])
 
     # top_row_of_table_mat
     # tools.print_to_latex_tabular(current, column_precisions=2)
 
     print("Helmholtz coil information")
     # other single values, the leading zeros reserve blank space for later editing
-    tools.print_to_latex_tabular([[0,N],[0,R],[0,b],[0,K_r]], column_precisions=3, significant_figures=True)
+    tools.print_to_latex_tabular([[0, N], [0, R], [0, b], [0, K_r]], column_precisions=3, significant_figures=True)
+
 
 def magnet_field():
     """
@@ -46,7 +47,7 @@ def magnet_field_calc():
     mikro = 1.2566370614*1e-6
     K = mikro * N * R**2 / ((b/2)**2 + R**2)**(3/2)
     print("Verrannollisuuskertoimet")
-    print("K:",K,"  K_r:", K_r, " eta:", K_r/K)
+    print("K:", K, "  K_r:", K_r, " eta:", K_r/K)
 
 
 def main():
@@ -66,12 +67,13 @@ def main():
 
     for voltage_i in range(6):
         for current_i in range(6):
-            qm_array[voltage_i, current_i] = (2*voltage[voltage_i]) / ( (magnetic_field[current_i]**2) * ((dat[voltage_i, current_i]*0.5)**2))
+            qm_array[voltage_i, current_i] = \
+                (2*voltage[voltage_i]) / ((magnetic_field[current_i]**2) * ((dat[voltage_i, current_i]*0.5)**2))
 
     # print(qm_array)
 
     print("q/m e11")
-    tools.print_to_latex_tabular(qm_array*1e-11, column_precisions=[4,4,4,4,4,4])
+    tools.print_to_latex_tabular(qm_array*1e-11, column_precisions=[4, 4, 4, 4, 4, 4])
 
     # plot_data = [
     #     go.Histogram(x=qm_array.flatten())
