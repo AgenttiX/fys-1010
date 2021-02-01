@@ -2,7 +2,7 @@
 
 import numpy as np
 import tools
-import external_data # The data module can be downloaded from overleaf project.
+import external_data
 
 # import plotly.offline as py
 # import plotly.graph_objs as go

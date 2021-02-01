@@ -246,9 +246,9 @@ class Main:
 
 
         # Initialise measurements
-        finnfoam = Measurement("Finnfoam", "Data/Finnfoam/", mass, heat_capacity, aluminium_area, thickness_finnfoam, thermal_conductivity_finnfoam)
-        wood = Measurement("Wood", "Data/Wood/", mass, heat_capacity, aluminium_area, thickness_wood, thermal_conductivity_wood)
-        air = Measurement("Air", "Data/Air/", mass, heat_capacity, aluminium_area)
+        finnfoam = Measurement("Finnfoam", "data/finnfoam/", mass, heat_capacity, aluminium_area, thickness_finnfoam, thermal_conductivity_finnfoam)
+        wood = Measurement("Wood", "data/wood/", mass, heat_capacity, aluminium_area, thickness_wood, thermal_conductivity_wood)
+        air = Measurement("Air", "data/air/", mass, heat_capacity, aluminium_area)
 
         finnfoam.print()
         wood.print()
